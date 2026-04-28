@@ -1,0 +1,190 @@
+{
+  "version": "1.0",
+  "comment": "Maps file glob patterns to INI section.key → human-readable label. Used by ChangeDescriptionEnricher to produce readable change summaries. Keys are case-insensitive. Section is omitted for keys that appear outside any section header.",
+  "files": {
+
+    "c:\\job\\status.ini": {
+      "UC_PROGRAM.ProgramName":  "Active machine program",
+      "UC_PROGRAM.ProductName":  "Active job / product",
+      "UC_PROGRAM.RecipeName":   "Active recipe"
+    },
+
+    "c:\\job\\*\\Metadata.ini": {
+      "General.name":    "Job name",
+      "General.Id":      "Job unique ID",
+      "General.Version": "Schema version",
+      "General.JobTag":  "Job tag label"
+    },
+
+    "c:\\job\\**\\Metadata.ini": {
+      "General.name":              "Setup name",
+      "General.Id":                "Setup unique ID",
+      "General.Version":           "Schema version",
+      "General.JobTag":            "Job tag label",
+      "General.LastActiveRecipe":  "Last active recipe"
+    },
+
+    "c:\\job\\**\\ProductionInfo.ini": {
+      "General.WaferDefectsCount":       "Total defect count on last wafer",
+      "General.WaferDefectDiceRatio":    "Fraction of dice with at least one defect",
+      "General.WaferDefectClassId":      "Dominant defect class ID",
+      "General.WaferDefectClassIdCount": "Defect count in dominant class",
+      "General.BatchPassWafersCount":    "Wafers passing yield criteria in this batch"
+    },
+
+    "c:\\job\\**\\MultiRecipe.ini": {
+      "Scan.MergingThreadCount":   "Parallel merge threads",
+      "Scan.doSeparateRecipe":     "Run recipes as separate scan passes",
+      "Scan.DoGrabAfterMerge":     "Perform image grab after merge",
+      "Scan.Recipes":              "Recipe slot enable flags",
+      "Scan.FieldCount":           "Fields per recipe definition line",
+      "Scan.RecipesPos":           "Recipe scan sequence positions",
+      "Scan.RecipesMerge":         "Recipe result merge participation",
+      "Scan.RunWaferAlignment":    "Per-recipe wafer alignment trigger",
+      "Scan.RecipesSampling":      "Per-recipe sampling scan flag",
+      "Scan.RecipesDynamic":       "Per-recipe dynamic scanning flag",
+      "Scan.BatchStatus":          "Per-recipe batch processing status",
+      "General.Version":           "File format version",
+      "WaferAQL2.Scan1":           "AQL criteria for scan 1",
+      "WaferAQL2.Scan2":           "AQL criteria for scan 2"
+    },
+
+    "c:\\job\\**\\DefectsClustering.ini": {
+      "General.Enabled":                        "Defect clustering enabled",
+      "General.ClusteringAfterMerge":           "Apply clustering after multi-recipe merge",
+      "General.Distance":                       "Max center-to-center clustering distance (µm)",
+      "General.SelectedFirstSortingList":       "Primary defect sort field",
+      "General.SelectedSecondSortingList":      "Secondary defect sort field",
+      "General.SelectedFirstSortingListOrder":  "Primary sort direction",
+      "General.SelectedSecondSortingListOrder": "Secondary sort direction",
+      "General.DefectsClusteringAlgMode":       "Clustering algorithm mode"
+    },
+
+    "c:\\job\\**\\ScanCondition.ini": {
+      "General.IsActive": "Scan condition check enforced"
+    },
+
+    "c:\\job\\**\\Wafer2Table.ini": {
+      "WAFER ALIGNMENT.Wafer2Table_X": "Affine matrix X-row (R11, R12, Tx)",
+      "WAFER ALIGNMENT.Wafer2Table_Y": "Affine matrix Y-row (R21, R22, Ty)",
+      "WAFER ALIGNMENT.Rotate  w2t":   "Net wafer rotation angle (degrees)",
+      "WAFER ALIGNMENT.Shear   w2t":   "Transform shear component",
+      "WAFER ALIGNMENT.Stretch w2t":   "Scale factors along X and Y",
+      "WAFER ALIGNMENT.Offset  w2t":   "Translation offset X, Y (µm)",
+      "WAFER ALIGNMENT.StdAffine":     "Affine fit RMS residual (µm)",
+      "WAFER ALIGNMENT.StdOrtho":      "Orthogonal fit RMS residual (µm)",
+      "LOCAL_CORRECTION.Apply":        "Local correction overlay applied",
+      "General.SaveTime":              "Alignment saved timestamp",
+      "ANCHOR POINTS.Count":           "Number of anchor points used"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\Recipe.ini": {
+      "AutoCycle.AutoFocusBeforeAlignment":    "Autofocus before alignment",
+      "AutoCycle.AutoFocusEvery":              "Autofocus frequency",
+      "AutoCycle.CleanReferenceEvery":         "Clean reference frequency",
+      "AutoCycle.UnloadToAnotherCassette":     "Unload to cassette B after scan",
+      "AutoCycle.NewCleanReferenceOption":     "Clean reference creation method",
+      "AutoCycle.StoreSamplingHeight":         "Save height data during sampling",
+      "AutoCycle.EnableDieLevelPostProcessing":"Die-level post-processing enabled",
+      "AutoCycle.ImportResults":               "Import external KLARF results",
+      "AutoCycle.SaveReferenceInResults":      "Save reference in scan results",
+      "AutoCycle.CleanRefFreq":                "Clean reference every N wafers",
+      "AutoCycle.CleanRefCounter":             "Wafers since last clean reference",
+      "General.Recipe Name":                   "Recipe name"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\ProductInfo.ini": {
+      "General.DieSizeX":           "Die width (µm)",
+      "General.DieSizeY":           "Die height (µm)",
+      "General.DiePitchX":          "Die pitch X (µm)",
+      "General.DiePitchY":          "Die pitch Y (µm)",
+      "General.WaferDiameter":      "Wafer diameter (mm)",
+      "General.NotchAngle":         "Notch / flat angle (degrees)",
+      "General.EdgeExclusion":      "Edge exclusion width (µm)",
+      "General.ScanType":           "Scan type (e.g. full/partial)",
+      "General.RobotPreAlignerAngle":"Robot pre-aligner rotation angle"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\Waferinfo.ini": {
+      "General.RobotPreAlignerAngle":  "Robot pre-aligner rotation angle",
+      "General.IsAutoCycleEnabled":    "Auto-cycle mode enabled",
+      "General.UseInkDot":             "Ink-dot detection enabled",
+      "General.UseOcr":                "OCR identification enabled",
+      "General.HwDependencies":        "Hardware dependency flags"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\Alignment.ini": {
+      "General.IsAligned":       "Alignment completed successfully",
+      "General.RotationResidual":"Rotation residual from alignment (degrees)"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\AlignmentData.ini": {
+      "General.MinScore":          "Minimum pattern match score (0–100)",
+      "General.MinTargetScore":    "Minimum target pattern score",
+      "General.IsAffineEnabled":   "Affine transform enabled (vs. rigid)",
+      "General.AlignPointsNum":    "Number of alignment points",
+      "General.ForceToGMF":        "Force GMF matcher for all alignment points",
+      "SECOND_ALIGN.MinGoodModels":"Minimum good model matches for second-pass alignment"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\AlignRtp.ini": {
+      "General.SearchWindowX":   "Alignment search window width (µm)",
+      "General.SearchWindowY":   "Alignment search window height (µm)",
+      "General.MinScore":        "Minimum match score threshold"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\Params_SystemInfo.ini": {
+      "General.MachineType":     "Machine type identifier",
+      "General.MachineSerial":   "Machine serial number",
+      "General.SoftwareVersion": "Software version applied to this recipe"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\OpticPreset.ini": {
+      "General.PresetName":      "Optical preset name",
+      "General.IllumChannel":    "Illumination channel selection",
+      "General.ExposureTime":    "Camera exposure time (ms)",
+      "General.Gain":            "Camera gain value"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\JobIllumLimits.ini": {
+      "General.MinIllumLevel":   "Minimum allowed illumination level",
+      "General.MaxIllumLevel":   "Maximum allowed illumination level"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\ZoomLevels.ini": {
+      "General.ZoomLevelCount":  "Number of zoom levels defined",
+      "General.ActiveZoomLevel": "Currently active zoom level"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\zones.ini": {
+      "General.ZoneCount":       "Number of scan zones defined",
+      "General.ActiveZones":     "Active zone list"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\GlobalRTP.ini": {
+      "General.SensitivityLevel": "Global detection sensitivity level",
+      "General.ThresholdMode":    "Threshold calculation mode"
+    },
+
+    "c:\\job\\**\\DefaultWafer2Table.ini": {
+      "WAFER ALIGNMENT.Wafer2Table_X": "Affine matrix X-row (R11, R12, Tx)",
+      "WAFER ALIGNMENT.Wafer2Table_Y": "Affine matrix Y-row (R21, R22, Ty)",
+      "WAFER ALIGNMENT.Rotate  w2t":   "Net wafer rotation angle (degrees)",
+      "WAFER ALIGNMENT.StdAffine":     "Affine fit RMS residual (µm)",
+      "General.SaveTime":              "Transform saved timestamp"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\CleanReferenceConfiguration.ini": {
+      "General.AveragingCount":      "Number of frames averaged for clean reference",
+      "General.OutlierRejection":    "Outlier rejection enabled",
+      "General.AcceptanceThreshold": "Acceptance quality threshold"
+    },
+
+    "c:\\job\\**\\Recipes\\*\\FocusMapping\\FocusMapping.ini": {
+      "General.SampleCount":   "Number of focus sample points",
+      "General.FocusMethod":   "Focus measurement method",
+      "General.ValidMap":      "Focus map validity flag"
+    }
+
+  }
+}
