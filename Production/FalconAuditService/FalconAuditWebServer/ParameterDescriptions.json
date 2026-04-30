@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "files": {
+    "c:\\job\\**\\Recipes\\*\\Recipe.ini": {
+      "AutoCycle.AutoFocusEvery":               "Autofocus frequency",
+      "AutoCycle.EnableDieLevelPostProcessing": "Die-level post-processing",
+      "AutoCycle.CleanReferenceEvery":          "Clean-reference frequency"
+    },
+    "c:\\job\\**\\Metadata.ini": {
+      "Job.Name":      "Job name",
+      "Job.Operator":  "Operator",
+      "Job.CreatedAt": "Created at"
+    },
+    "c:\\job\\status.ini": {
+      "Status.State":   "Service state",
+      "Status.Machine": "Machine"
+    }
+  }
+}

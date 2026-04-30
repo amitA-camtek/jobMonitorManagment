@@ -1,0 +1,91 @@
+{
+  "version": "1.0",
+  "generatedFrom": "JobConfigurationFileList.json",
+  "rules": [
+    { "pattern": "c:\\job\\status.ini",                                                "matchType": "exact", "module": "Config",        "ownerService": "Falcon.Net", "monitorPriority": "P1" },
+
+    { "pattern": "c:\\job\\*\\Metadata.ini",                                           "matchType": "glob",  "module": "Job",           "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Metadata.ini",                                          "matchType": "glob",  "module": "Job",           "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\ProductionInfo.ini",                                    "matchType": "glob",  "module": "Job",           "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\MultiRecipe.ini",                                       "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\DefectsClustering.ini",                                 "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\ScanCondition.ini",                                     "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Wafer2Table.ini",                                       "matchType": "glob",  "module": "AlignmentData", "ownerService": "AOI_Main",   "monitorPriority": "P1" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\Recipe.ini",                                "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ProductInfo.ini",                           "matchType": "glob",  "module": "Recipe",        "ownerService": "AOI_Main",   "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\Waferinfo.ini",                             "matchType": "glob",  "module": "Recipe",        "ownerService": "AOI_Main",   "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\GlobalRTP.ini",                             "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\RTP.txt",                                   "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ZoomLevels.ini",                            "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\zones.ini",                                 "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\Params_WaferInfo.ini",                      "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\Zones\\*.ini",                              "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P1" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\Alignment.ini",                             "matchType": "glob",  "module": "AlignmentData", "ownerService": "AOI_Main",   "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\AlignRtp.ini",                              "matchType": "glob",  "module": "AlignmentData", "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\Params_AlignRTP.ini",                       "matchType": "glob",  "module": "AlignmentData", "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\WaferAlignData\\AlignmentData.ini",         "matchType": "glob",  "module": "AlignmentData", "ownerService": "AOI_Main",   "monitorPriority": "P1" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\Params_SystemInfo.ini",                     "matchType": "glob",  "module": "Config",        "ownerService": "RMS",        "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\OpticPreset.ini",                           "matchType": "glob",  "module": "Config",        "ownerService": "DataServer", "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\JobIllumLimits.ini",                        "matchType": "glob",  "module": "Config",        "ownerService": "DataServer", "monitorPriority": "P1" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\OpticToVCamStorage.json",                   "matchType": "glob",  "module": "Config",        "ownerService": "AOI_Main",   "monitorPriority": "P1" },
+
+    { "pattern": "c:\\job\\**\\DefaultWafer2Table.ini",                                "matchType": "glob",  "module": "AlignmentData", "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\DefaultWafer2Table.ini",                    "matchType": "glob",  "module": "AlignmentData", "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\AlignmentData.ini",                         "matchType": "glob",  "module": "AlignmentData", "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\WaferAlignData\\AlignmentStatisticsTime.txt","matchType": "glob",  "module": "AlignmentData", "ownerService": "AOI_Main",   "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\WaferAlignData\\Alignment_*.txt",           "matchType": "glob",  "module": "AlignmentData", "ownerService": "AOI_Main",   "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\FocusMapping\\DieReferenceLocation.json",   "matchType": "glob",  "module": "AlignmentData", "ownerService": "AOI_Main",   "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\TrainData\\FrameToChuck.ini",               "matchType": "glob",  "module": "AlignmentData", "ownerService": "AOI_Main",   "monitorPriority": "P2" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ReferencesInfo.json",                       "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\zones.txt",                                 "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ScenariosMetadatas.ini",                    "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\CcsLocalMeas.ini",                          "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\CleanReferenceConfiguration.ini",           "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\CleanReferenceFinalParams.ini",             "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\CreateReference3dOptions.ini",              "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\OverlayScan.ini",                           "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\SamplingMetrology.ini",                     "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\UniqueArea.ini",                            "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\WaferMapRecipe.ini",                        "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\WaferToRefWafer.ini",                       "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\DieAlignment.dat_block.ini",                "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\DieMapAlignRes.dat_block.ini",              "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\CcsSetup.xml",                              "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\FocusMapping\\FocusMapping.ini",            "matchType": "glob",  "module": "Recipe",        "ownerService": "AOI_Main",   "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\TrainData\\Die.ini",                        "matchType": "glob",  "module": "Recipe",        "ownerService": "AOI_Main",   "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\TrainData\\DieRefToTrain.txt",              "matchType": "glob",  "module": "Recipe",        "ownerService": "AOI_Main",   "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\WaferInfo.dat",                             "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P2" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\DieMapRegPos.txt",                          "matchType": "glob",  "module": "DieMap",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\DieRegPos.txt",                             "matchType": "glob",  "module": "DieMap",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\DieMapping.dat",                            "matchType": "glob",  "module": "DieMap",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\DieRegPos.dat",                             "matchType": "glob",  "module": "DieMap",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\DieMapRegPos.dat",                          "matchType": "glob",  "module": "DieMap",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\zones.dat",                                 "matchType": "glob",  "module": "DieMap",        "ownerService": "RMS",        "monitorPriority": "P2" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ExternalCoordSystems.ini",                  "matchType": "glob",  "module": "Config",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\WaferDataReadSettings.xml",                 "matchType": "glob",  "module": "Config",        "ownerService": "RMS",        "monitorPriority": "P2" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\OpticLightMetadata\\config.ini",            "matchType": "glob",  "module": "Config",        "ownerService": "DataServer", "monitorPriority": "P2" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\.dc_cache\\TransactionsHistory.ini",        "matchType": "glob",  "module": "Log",           "ownerService": "RMS",        "monitorPriority": "P2" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\TrainData\\DieImage\\DieImageToTable.ini",  "matchType": "glob",  "module": "Recipe",        "ownerService": "AOI_Main",   "monitorPriority": "P3" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\TrainData\\DieImage\\ZoomLevels.ini",       "matchType": "glob",  "module": "Recipe",        "ownerService": "AOI_Main",   "monitorPriority": "P3" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ReferenceBackup\\ZoomLevels.ini",           "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P3" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\SW_QA-*\\OpticsPreset.ini",                 "matchType": "glob",  "module": "Config",        "ownerService": "RMS",        "monitorPriority": "P3" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ScanOverlapLog.txt",                        "matchType": "glob",  "module": "ScanResult",    "ownerService": "AOI_Main",   "monitorPriority": "P3" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ScanOverviewImage.txt",                     "matchType": "glob",  "module": "ScanResult",    "ownerService": "AOI_Main",   "monitorPriority": "P3" },
+    { "pattern": "c:\\job\\**\\Recipes\\*\\s_FrameData.dat.md",                        "matchType": "glob",  "module": "Recipe",        "ownerService": "RMS",        "monitorPriority": "P3" },
+
+    { "pattern": "c:\\job\\**\\Recipes\\*\\ImageProcessing.log",                       "matchType": "glob",  "module": "Log",           "ownerService": "AOI_Main",   "monitorPriority": "P4" }
+  ],
+  "defaultClassification": {
+    "module": "Unknown",
+    "ownerService": "Unknown",
+    "monitorPriority": "P3"
+  }
+}
