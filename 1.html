@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>validationJob — Change Report</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body   { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+    .page  { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+    .header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.25rem; }
+    h1     { font-size: 1.4rem; margin: 0; }
+    .meta  { color: #666; font-size: .85rem; }
+    .actions { display: flex; gap: .75rem; }
+    .btn   { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .9rem;
+             border-radius: 6px; font-size: .85rem; font-weight: 600; text-decoration: none;
+             background: #0078d4; color: #fff; border: none; cursor: pointer; }
+    .btn:hover { background: #006cbf; }
+    .card  { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow: hidden; }
+    table  { border-collapse: collapse; width: 100%; }
+    thead tr { background: #f0f2f5; }
+    th     { text-align: left; padding: .6rem .9rem; font-size: .8rem; font-weight: 600;
+             text-transform: uppercase; letter-spacing: .04em; color: #555; white-space: nowrap; }
+    td     { padding: .55rem .9rem; font-size: .88rem; vertical-align: top;
+             border-bottom: 1px solid #eef0f3; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fafb; }
+    td.time { white-space: nowrap; color: #555; font-size: .8rem; font-variant-numeric: tabular-nums; }
+    td.user { white-space: nowrap; font-weight: 500; color: #0060b0; }
+    td.ctx  { white-space: nowrap; color: #555; }
+    .sub   { color: #888; font-size: .8rem; }
+    .empty { text-align: center; padding: 3rem; color: #aaa; font-size: .95rem; }
+    @media print { body { background: #fff; } .actions { display: none; } .card { box-shadow: none; } }
+    .diff { font-size:.75rem; font-family:Consolas,monospace; margin:.4rem 0 0; background:#f8f8f8; padding:.5rem .75rem; border-radius:4px; border:1px solid #e0e0e0; overflow-x:auto; white-space:pre; }
+    .diff-toggle { cursor:pointer; color:#0060b0; font-size:.78rem; }
+    .da { color:#1a7a1a; display:block; }
+    .dr { color:#b01a1a; display:block; }
+    .ai-notice { display:flex; align-items:center; gap:.6rem; background:#e8f2fc; border:1px solid #b3d1f0; border-radius:8px; padding:.6rem 1rem; margin-bottom:1.25rem; font-size:.83rem; color:#1a4a7a; }
+    .ai-notice svg { flex-shrink:0; }
+    @media print { .ai-notice { display:none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <h1>validationJob — Change Report</h1>
+        <div class="meta">86 event(s) &nbsp;&middot;&nbsp; Generated 2026-05-03 10:55</div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="?format=csv">&#8595; Download CSV</a>
+        <a class="btn" href="#" onclick="window.print();return false;">&#128438; Print</a>
+      </div>
+    </div>
+    <div class="ai-notice">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="8" cy="8" r="7.5" stroke="#1a4a7a"/>
+        <rect x="7" y="6" width="2" height="6" rx="1" fill="#1a4a7a"/>
+        <circle cx="8" cy="4" r="1" fill="#1a4a7a"/>
+      </svg>
+      File descriptions and parameter change summaries are generated automatically and may not be fully accurate.
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>User</th>
+            <th>Setup</th>
+            <th>Recipe</th>
+            <th>File</th>
+            <th>Parameter Change</th>
+          </tr>
+        </thead>
+        <tbody>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Metadata.ini</strong><br><span class="sub">Setup-level identity file recording the setup name, GUID, version, and last active recipe. Written by RMS at setup creation.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>VcamInstallerGuid.txt</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>CurrWaferSurfaceInterpolation.ini</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>CurrWaferSurfaceInterpolation.md</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DefectsClustering.ini</strong><br><span class="sub">Controls whether defects are grouped into clusters after scanning, and specifies the clustering algorithm, proximity threshold, and defect sort order for display and reporting.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieAlignment.dat</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieAlignment.dat_block.ini</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Metadata.ini</strong><br><span class="sub">Setup-level identity file recording the setup name, GUID, version, and last active recipe. Written by RMS at setup creation.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>MultiRecipe.ini</strong><br><span class="sub">Defines multi-recipe scan orchestration — which recipes are active, their execution order, merge strategy, per-recipe alignment and sampling flags, and AQL criteria per scan.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ProductionInfo.ini</strong><br><span class="sub">Accumulates per-wafer production statistics (defect counts, die yield ratios, class hit counts, batch pass count) updated by RMS after each wafer scan.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Alignment.ini</strong><br><span class="sub">Records the coarse alignment completion status and the resulting rotation residual for the current recipe load.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>AlignmentData.ini</strong><br><span class="sub">Stored alignment data for the recipe — position corrections and transformation parameters from previous alignment runs.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>AlignRtp.ini</strong><br><span class="sub">Real-time parameters controlling alignment algorithm thresholds, search window sizes, and scoring criteria.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>CcsLocalMeas.ini</strong><br><span class="sub">Local colorimetric calibration measurements for this recipe, used by the color correction system.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>CleanReferenceFinalParams.ini</strong><br><span class="sub">Final parameter set applied when generating a clean reference — averaging options, outlier rejection, and acceptance criteria.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>CreateReference3dOptions.ini</strong><br><span class="sub">Options controlling 3D reference image creation — height map settings, capture parameters, and stitching options.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>CurrWaferSurfaceInterpolation.ini</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>CurrWaferSurfaceInterpolation.md</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DefaultWafer2Table.ini</strong><br><span class="sub">Stores the 2&#215;3 affine transformation matrix mapping wafer coordinates to chuck/stage coordinates, computed after wafer alignment, along with per-anchor residuals.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DefaultWaferSurfaceInterpolation.ini</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DefaultWaferSurfaceInterpolation.md</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieAlignment.dat_block.ini</strong><br><span class="sub">Die grid block layout at recipe scope — die count, row/column indices, physical positions, and die dimensions in &#181;m.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieMapAlignRes.dat</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieMapAlignRes.dat_block.ini</strong><br><span class="sub">Alignment residuals and correction data from the die map alignment procedure.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieMapping.dat</strong><br><span class="sub">Binary die mapping data defining the wafer die grid — which dice are included or excluded from inspection.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieMapRegPos.dat</strong><br><span class="sub">Binary die map registration data — anchor and alignment positions for the die grid.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieMapRegPos.txt</strong><br><span class="sub">Registration position data for the die map — anchor coordinates used to align the die map to the wafer.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieRegPos.dat</strong><br><span class="sub">Binary die registration position data used to locate dice on the wafer during scanning.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieRegPos.txt</strong><br><span class="sub">Die registration position data — coordinates used to locate individual dice on the wafer for inspection.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ExternalCoordSystems.ini</strong><br><span class="sub">Defines external coordinate system transformations applied during result export and KLARF generation.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>GlobalRTP.ini</strong><br><span class="sub">Global real-time parameter set controlling scan-time thresholds and algorithm settings across all zones in this recipe.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>JobIllumLimits.ini</strong><br><span class="sub">Per-job illumination boundary constraints that bound the allowable range of optical settings for this recipe.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Metadata.ini</strong><br><span class="sub">Setup-level identity file recording the setup name, GUID, version, and last active recipe. Written by RMS at setup creation.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>OpticPreset.ini</strong><br><span class="sub">Optical channel preset configuration — illumination levels, exposure settings, and camera parameters for this recipe.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>OpticToVCamStorage.json</strong><br><span class="sub">Maps physical optical channels to virtual camera indices used in image acquisition and processing for this recipe.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>OverlayScan.ini</strong><br><span class="sub">Settings for overlay scanning mode — scan coverage, reference comparison method, and overlay tolerance.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Params_AlignRTP.ini</strong><br><span class="sub">Parameterised alignment settings derived from the recipe definition and applied during the alignment step.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Params_SystemInfo.ini</strong><br><span class="sub">Machine system parameters applied to this recipe — hardware settings, scan configuration, and calibration references.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Params_WaferInfo.ini</strong><br><span class="sub">Wafer geometry parameters derived from the product definition and applied during scanning — diameter, notch position, and edge exclusion.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ProductInfo.ini</strong><br><span class="sub">Stores all product-level wafer parameters: die geometry, pitch, wafer diameter, scan flags, robot configuration, reference die coordinates, and surface mapping mode.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Recipe.ini</strong><br><span class="sub">Top-level recipe control file governing auto-cycle behavior — autofocus and clean-reference frequencies, post-processing flags, and recipe identity.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ReferencesInfo.json</strong><br><span class="sub">Metadata describing the reference images available for this recipe — creation timestamps, version, and validity flags.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>RTP.txt</strong><br><span class="sub">Recipe real-time parameter file containing per-recipe thresholds and algorithm controls, updated during scan setup.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>SamplingMetrology.ini</strong><br><span class="sub">Configuration for the sampling metrology scan — measurement sites, frequency, and data capture options.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ScanOverlapLog.txt</strong><br><span class="sub">Log of scan strip overlap measurements recorded during the scan — used to verify scan coverage and stitch quality.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ScanOverviewImage_Recipes-AllMags.txt</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ScenarioMetadataGrab.xml</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ScenariosMetadatas.ini</strong><br><span class="sub">Metadata for defined inspection scenarios — which algorithm configurations and parameter sets are active.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>UniqueArea.ini</strong><br><span class="sub">Defines die areas that receive special inspection treatment — different thresholds, algorithms, or exclusion rules.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Wafer2Table.ini</strong><br><span class="sub">Stores the 2&#215;3 affine transformation matrix mapping wafer coordinates to chuck/stage coordinates, computed after wafer alignment, along with per-anchor residuals.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>WaferDataReadSettings.xml</strong><br><span class="sub">XML configuration controlling how external wafer data (KLARF, maps) is ingested and parsed for this recipe.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>WaferInfo.dat</strong><br><span class="sub">Wafer information data file containing geometric and process parameters for the current wafer.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Waferinfo.ini</strong><br><span class="sub">Configures wafer handling and scan automation settings — robot pre-aligner rotation, hardware dependency flags, auto-cycle mode, and OCR/ink-dot options.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>WaferMapRecipe.ini</strong><br><span class="sub">Controls wafer map import and update settings at recipe scope — external map ingestion, fiducial matching, and map update policy.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Zones.dat</strong><br><span class="sub">Binary zone data file containing the compiled zone geometry and inclusion masks for this recipe.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>zones.ini</strong><br><span class="sub">Defines the scan zone layout — zone names, boundaries, and inclusion flags — for this recipe.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>zones.txt</strong><br><span class="sub">Human-readable zone description file listing zone names and properties for display and reporting.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ZoomLevels.ini</strong><br><span class="sub">Defines optical zoom level settings and magnification parameters for recipe image capture and review.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>TransactionsHistory.ini</strong><br><span class="sub">Internal log of recipe parameter transactions — records which parameters were changed and when during recipe editing.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>OpticsPreset.ini</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>FocusMappingDebug_AllMags.txt</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>FocusMapping.ini</strong><br><span class="sub">Focus height map data for the recipe — height samples across the wafer surface used to maintain focus during scanning.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>FocusPointsForScan.xml</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>config.ini</strong><br><span class="sub">Calibration metadata for optical light channels — reference intensity values and normalization parameters.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ZoomLevels.ini</strong><br><span class="sub">Zoom level configuration for the reference image backup set.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>OpticsPreset.ini</strong><br><span class="sub">Optical preset snapshot stored during QA verification runs — used for audit and comparison.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Die.ini</strong><br><span class="sub">Configuration for the training die used in reference image acquisition — die position and image capture settings.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieRefToTrain.txt</strong><br><span class="sub">Reference position data used during training image acquisition for this recipe.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>FrameToChuck.ini</strong><br><span class="sub">Transform mapping camera frame coordinates to chuck coordinates, used in training and reference image acquisition.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ZonesVectorInfo.csv</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>AlignmentData.ini</strong><br><span class="sub">Stores the alignment results for the current recipe run — rotation, offset, and residual error data.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>AlignmentStatisticsTime.txt</strong><br><span class="sub">Records timing measurements from the alignment procedure for performance monitoring and diagnostics.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Alignment_PatFindRtp.txt</strong><br><span class="sub">Per-run alignment measurements and anchor point data from the most recent alignment procedure.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Alignment_PatRes.txt</strong><br><span class="sub">Per-run alignment measurements and anchor point data from the most recent alignment procedure.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Alignment_Stat.txt</strong><br><span class="sub">Per-run alignment measurements and anchor point data from the most recent alignment procedure.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Pad.ini</strong><br><span class="sub">Per-zone detection thresholds, algorithm selection, and sensitivity settings applied during scanning of this zone.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>PostProcess.ini</strong><br><span class="sub">Per-zone detection thresholds, algorithm selection, and sensitivity settings applied during scanning of this zone.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Prob.ini</strong><br><span class="sub">Per-zone detection thresholds, algorithm selection, and sensitivity settings applied during scanning of this zone.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>RDL.ini</strong><br><span class="sub">Per-zone detection thresholds, algorithm selection, and sensitivity settings applied during scanning of this zone.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Scan Area.ini</strong><br><span class="sub">Per-zone detection thresholds, algorithm selection, and sensitivity settings applied during scanning of this zone.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>Solder.ini</strong><br><span class="sub">Per-zone detection thresholds, algorithm selection, and sensitivity settings applied during scanning of this zone.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>FocusModel.ini</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>DieImageToTable.ini</strong><br><span class="sub">Transform mapping die image coordinates to chuck table coordinates, used in training image acquisition.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ZoomLevels.ini</strong><br><span class="sub">Zoom level settings for training die image capture — magnification and resolution parameters.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:32:41</td><td class="user"></td><td class="ctx"></td><td class="ctx"></td><td><strong>ZoomLevels.ini</strong><br><span class="sub">Unclassified file change.</span></td><td>File created</td></tr>
+<tr><td class="time">2026-05-03  10:55:44</td><td class="user">me_admin</td><td class="ctx">300mm</td><td class="ctx">AllMags</td><td><strong>AlignmentData.ini</strong><br><span class="sub">Stores the alignment results for the current recipe run — rotation, offset, and residual error data.</span></td><td>Alignment Time: 3132 → 3133<details><summary class="diff-toggle">Show diff</summary><pre class="diff"><span class="dr">--- AlignmentData.ini (before)
+</span>
+<span class="da">+++ AlignmentData.ini (after)
+</span>
+<span>@@ -1,3 +1,3 @@
+</span>
+<span> [General]
+</span>
+<span class="dr">-AlignmentTime=3132
+</span>
+<span class="da">+AlignmentTime=3133</span>
+</pre></details></td></tr>
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

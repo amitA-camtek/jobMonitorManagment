@@ -12,6 +12,8 @@ public static class EventsEndpoints
             string jobName, QueryRepository repo,
             string? module, string? priority, string? service,
             string? eventType, string? machine, string? from, string? to, string? path,
+            string? fileEra = null,
+            bool excludeCreated = true,
             int page = 1, int pageSize = 50, string sort = "desc") =>
         {
             pageSize = Math.Min(Math.Max(pageSize, 1), 500);
@@ -19,7 +21,9 @@ public static class EventsEndpoints
             var filter = new EventFilter
             {
                 Module=module, Priority=priority, Service=service, EventType=eventType,
-                Machine=machine, From=from, To=to, Path=path, Page=page, PageSize=pageSize, Sort=sort
+                Machine=machine, From=from, To=to, Path=path, FileEra=fileEra,
+                Page=page, PageSize=pageSize, Sort=sort,
+                ExcludeCreated=excludeCreated
             };
             var (items, total) = repo.GetEvents(jobName, filter);
             return Results.Ok(new { Total = total, Page = page, PageSize = pageSize, Items = items });
@@ -32,30 +36,53 @@ public static class EventsEndpoints
             return detail is null ? Results.NotFound() : Results.Ok(detail);
         });
 
-        api.MapGet("/global/events", (
-            QueryRepository repo, JobDiscoveryService discovery,
-            int page = 1, int pageSize = 50, string sort = "desc") =>
-        {
-            pageSize = Math.Min(Math.Max(pageSize, 1), 500);
-            page     = Math.Max(page, 1);
-            var filter = new EventFilter { Page=page, PageSize=pageSize, Sort=sort };
-            var (items, total) = repo.GetEventsFromDb(discovery.GlobalDb, filter);
-            return Results.Ok(new { Total = total, Page = page, PageSize = pageSize, Items = items });
-        });
-
         api.MapGet("/jobs/{jobName}/report", (
             string jobName, QueryRepository repo, HttpContext ctx,
             string? from, string? to, string format = "html",
             int pageSize = 1000) =>
         {
             pageSize = Math.Min(Math.Max(pageSize, 1), 5000);
-            var filter = new EventFilter { From = from, To = to, PageSize = pageSize, Sort = "asc" };
+
+            // Exclude 'Created' events from the report unless the job was first set up
+            // within this report period.  When from is null we show the full history, which
+            // naturally includes the job-creation Created events, so no exclusion needed.
+            bool excludeCreated = false;
+            if (from is not null)
+            {
+                var firstEvent = repo.GetJobFirstEventTime(jobName);
+                bool jobCreatedInPeriod = firstEvent is not null &&
+                    string.Compare(firstEvent, from, StringComparison.Ordinal) >= 0;
+                excludeCreated = !jobCreatedInPeriod;
+            }
+
+            var filter = new EventFilter { From = from, To = to, PageSize = pageSize, Sort = "asc",
+                                           ExcludeCreated = excludeCreated,
+                                           FileEra = "Runtime" };
             var (items, total) = repo.GetEvents(jobName, filter);
 
             if (string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase))
                 return BuildCsv(jobName, items, ctx);
 
-            return BuildHtml(jobName, items, total, from, to, ctx);
+            var now      = DateTime.Now;
+            var htmlBody = BuildHtmlContent(jobName, items, total, from, to, now);
+            const string outDir = @"C:\Amit\html";
+            Directory.CreateDirectory(outDir);
+            var safeJob  = string.Concat(jobName.Select(c =>
+                Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+            var htmlPath = Path.Combine(outDir, $"{safeJob}-{now:yyyyMMdd-HHmmss}.html");
+            File.WriteAllText(htmlPath, htmlBody, System.Text.Encoding.UTF8);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                { FileName = htmlPath, UseShellExecute = true });
+            return Results.Ok(new
+            {
+                Job         = jobName,
+                From        = from,
+                To          = to,
+                Total       = total,
+                GeneratedAt = now.ToString("yyyy-MM-dd HH:mm:ss"),
+                HtmlFile    = htmlPath,
+                Items       = items
+            });
         });
     }
 
@@ -72,15 +99,18 @@ public static class EventsEndpoints
         }
 
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("Time,User,File Name,File Description,Parameter Change");
+        sb.AppendLine("Time,User,Setup,Recipe,File Name,File Description,Parameter Change,Diff");
         foreach (var e in items)
         {
             var fileName = Path.GetFileName(e.RelFilepath);
             sb.Append(CsvField(FormatTime(e.ChangedAt))).Append(',')
               .Append(CsvField(e.LoginUser ?? "")).Append(',')
+              .Append(CsvField(e.Setup ?? "")).Append(',')
+              .Append(CsvField(e.Recipe ?? "")).Append(',')
               .Append(CsvField(fileName)).Append(',')
               .Append(CsvField(e.FileDescription)).Append(',')
-              .AppendLine(CsvField(e.ChangeSummary));
+              .Append(CsvField(e.ChangeSummary)).Append(',')
+              .AppendLine(CsvField(e.DiffText ?? ""));
         }
 
         ctx.Response.Headers["Content-Disposition"] =
@@ -88,9 +118,9 @@ public static class EventsEndpoints
         return Results.Content(sb.ToString(), "text/csv; charset=utf-8");
     }
 
-    private static IResult BuildHtml(
+    private static string BuildHtmlContent(
         string jobName, List<AuditEventSummary> items, long total,
-        string? from, string? to, HttpContext ctx)
+        string? from, string? to, DateTime genTime)
     {
         static string E(string? s) => System.Net.WebUtility.HtmlEncode(s ?? "");
 
@@ -102,11 +132,40 @@ public static class EventsEndpoints
                 ? E(fileName)
                 : $"<strong>{E(fileName)}</strong><br><span class=\"sub\">{E(e.FileDescription)}</span>";
 
+            var ext       = Path.GetExtension(fileName).ToLowerInvariant();
+            var isTextIni = ext is ".ini" or ".txt";
+            var diffBlock = "";
+            if (!string.IsNullOrWhiteSpace(e.DiffText))
+            {
+                var diffLines = new System.Text.StringBuilder();
+                foreach (var line in e.DiffText.Split('\n'))
+                {
+                    if (isTextIni)
+                    {
+                        // Show only updated lines — strip the leading '+', skip removed lines and headers
+                        if (line.StartsWith('+') && !line.StartsWith("+++"))
+                            diffLines.Append($"<span>{E(line[1..])}</span>\n");
+                    }
+                    else
+                    {
+                        var cls = line.StartsWith('+') ? " class=\"da\""
+                                : line.StartsWith('-') ? " class=\"dr\"" : "";
+                        diffLines.Append($"<span{cls}>{E(line)}</span>\n");
+                    }
+                }
+                diffBlock = isTextIni && diffLines.Length > 0
+                    ? $"<pre class=\"diff diff-inline\">{diffLines}</pre>"
+                    : $"<details><summary class=\"diff-toggle\">Show diff</summary>" +
+                      $"<pre class=\"diff\">{diffLines}</pre></details>";
+            }
+
             rows.Append("<tr>")
                 .Append($"<td class=\"time\">{E(FormatTime(e.ChangedAt))}</td>")
                 .Append($"<td class=\"user\">{E(e.LoginUser ?? "")}</td>")
+                .Append($"<td class=\"ctx\">{E(e.Setup ?? "")}</td>")
+                .Append($"<td class=\"ctx\">{E(e.Recipe ?? "")}</td>")
                 .Append($"<td>{fileCell}</td>")
-                .Append($"<td>{E(e.ChangeSummary)}</td>")
+                .Append($"<td>{E(e.ChangeSummary)}{diffBlock}</td>")
                 .AppendLine("</tr>");
         }
 
@@ -114,8 +173,8 @@ public static class EventsEndpoints
             ? $" &nbsp;&mdash;&nbsp; {E(from ?? "…")} to {E(to ?? "now")}"
             : "";
         var csvUrl    = $"?format=csv{(from != null ? $"&from={Uri.EscapeDataString(from)}" : "")}{(to != null ? $"&to={Uri.EscapeDataString(to)}" : "")}";
-        var title     = E(jobName);
-        var genTime   = E(DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+        var title      = E(jobName);
+        var genTimeStr = E(genTime.ToString("yyyy-MM-dd HH:mm"));
 
         var html = $$"""
             <!DOCTYPE html>
@@ -146,9 +205,18 @@ public static class EventsEndpoints
                 tr:hover td { background: #f9fafb; }
                 td.time { white-space: nowrap; color: #555; font-size: .8rem; font-variant-numeric: tabular-nums; }
                 td.user { white-space: nowrap; font-weight: 500; color: #0060b0; }
+                td.ctx  { white-space: nowrap; color: #555; }
                 .sub   { color: #888; font-size: .8rem; }
                 .empty { text-align: center; padding: 3rem; color: #aaa; font-size: .95rem; }
                 @media print { body { background: #fff; } .actions { display: none; } .card { box-shadow: none; } }
+                .diff { font-size:.75rem; font-family:Consolas,monospace; margin:.4rem 0 0; background:#f8f8f8; padding:.5rem .75rem; border-radius:4px; border:1px solid #e0e0e0; overflow-x:auto; white-space:pre; }
+                .diff-toggle { cursor:pointer; color:#0060b0; font-size:.78rem; }
+                .diff-inline { margin-top:.25rem; border-left:3px solid #d0d0d0; }
+                .da { color:#1a7a1a; display:block; }
+                .dr { color:#b01a1a; display:block; }
+                .ai-notice { display:flex; align-items:center; gap:.6rem; background:#e8f2fc; border:1px solid #b3d1f0; border-radius:8px; padding:.6rem 1rem; margin-bottom:1.25rem; font-size:.83rem; color:#1a4a7a; }
+                .ai-notice svg { flex-shrink:0; }
+                @media print { .ai-notice { display:none; } }
               </style>
             </head>
             <body>
@@ -156,12 +224,19 @@ public static class EventsEndpoints
                 <div class="header">
                   <div>
                     <h1>{{title}} — Change Report</h1>
-                    <div class="meta">{{total}} event(s){{dateRange}} &nbsp;&middot;&nbsp; Generated {{genTime}}</div>
+                    <div class="meta">{{total}} event(s){{dateRange}} &nbsp;&middot;&nbsp; Generated {{genTimeStr}}</div>
                   </div>
                   <div class="actions">
                     <a class="btn" href="{{csvUrl}}">&#8595; Download CSV</a>
-                    <a class="btn" href="#" onclick="window.print();return false;">&#128438; Print</a>
                   </div>
+                </div>
+                <div class="ai-notice">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="8" cy="8" r="7.5" stroke="#1a4a7a"/>
+                    <rect x="7" y="6" width="2" height="6" rx="1" fill="#1a4a7a"/>
+                    <circle cx="8" cy="4" r="1" fill="#1a4a7a"/>
+                  </svg>
+                  File descriptions and parameter change summaries are generated automatically and may not be fully accurate.
                 </div>
                 <div class="card">
                   <table>
@@ -169,6 +244,8 @@ public static class EventsEndpoints
                       <tr>
                         <th>Time</th>
                         <th>User</th>
+                        <th>Setup</th>
+                        <th>Recipe</th>
                         <th>File</th>
                         <th>Parameter Change</th>
                       </tr>
@@ -183,7 +260,7 @@ public static class EventsEndpoints
             </html>
             """;
 
-        return Results.Content(html, "text/html; charset=utf-8");
+        return html;
     }
 
     private static string FormatTime(string iso)

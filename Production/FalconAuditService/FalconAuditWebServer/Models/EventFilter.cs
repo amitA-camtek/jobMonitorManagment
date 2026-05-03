@@ -10,7 +10,9 @@ public record EventFilter
     public string? From      { get; init; }
     public string? To        { get; init; }
     public string? Path      { get; init; }
-    public int     Page      { get; init; } = 1;
-    public int     PageSize  { get; init; } = 50;
-    public string  Sort      { get; init; } = "desc";
+    public string? FileEra   { get; init; }
+    public int     Page           { get; init; } = 1;
+    public int     PageSize       { get; init; } = 50;
+    public string  Sort           { get; init; } = "desc";
+    public bool    ExcludeCreated { get; init; } = true;
 }

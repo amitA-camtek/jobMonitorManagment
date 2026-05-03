@@ -17,4 +17,7 @@ public record AuditEventSummary
     public string? DiffText        { get; init; }
     public bool    IsBackfill      { get; init; }
     public string? LoginUser       { get; init; }
+    public string? Setup           { get; init; }
+    public string? Recipe          { get; init; }
+    public string? FileEra         { get; init; }
 }

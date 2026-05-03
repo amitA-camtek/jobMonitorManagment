@@ -18,4 +18,7 @@ public record AuditLogEntry
     public bool    IsBackfill       { get; init; } = false; // true when written by CatchUpScanner
     public string? OldFilepath      { get; init; }          // populated for Renamed events only
     public string? LoginUser        { get; init; }          // user from C:\bis\data\lastLogin.json
+    public string? Setup            { get; init; }          // setup folder name  (e.g. "Setup1")
+    public string? Recipe           { get; init; }          // recipe folder name (e.g. "R1")
+    public string? FileEra          { get; init; }          // "JobInit" | "Runtime" | null (legacy)
 }

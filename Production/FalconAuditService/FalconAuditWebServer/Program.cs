@@ -30,24 +30,14 @@ try
     // ── Audit service dependencies ─────────────────────────────────────────
     builder.Services.AddSingleton(sp =>
     {
-        var globalDbPath = builder.Configuration["AuditService:GlobalDbPath"]
-                           ?? @"C:\bis\auditlog\global.db";
-        return new SqliteRepository(globalDbPath,
-            sp.GetRequiredService<ILogger<SqliteRepository>>());
-    });
-
-    builder.Services.AddSingleton(sp =>
-    {
-        var cfg     = sp.GetRequiredService<SqliteRepository>().LoadConfig();
         var section = builder.Configuration.GetSection("AuditService");
+        var cfg     = new MonitorConfig();
         var watch   = section["WatchPath"];
         var rules   = section["ClassificationRulesPath"];
         var param   = section["ParameterDescriptionsPath"];
-        var global  = section["GlobalDbPath"];
         if (!string.IsNullOrEmpty(watch))  cfg.WatchPath                 = watch;
         if (!string.IsNullOrEmpty(rules))  cfg.ClassificationRulesPath   = rules;
         if (!string.IsNullOrEmpty(param))  cfg.ParameterDescriptionsPath = param;
-        if (!string.IsNullOrEmpty(global)) cfg.GlobalDbPath              = global;
         return cfg;
     });
 
@@ -75,18 +65,34 @@ try
 
     builder.Services.AddSingleton(sp =>
     {
-        var config   = sp.GetRequiredService<MonitorConfig>();
-        var shards   = sp.GetRequiredService<ShardRegistry>();
-        var manifest = sp.GetRequiredService<ManifestManager>();
-        var logger   = sp.GetRequiredService<ILogger<DirectoryWatcher>>();
+        var config        = sp.GetRequiredService<MonitorConfig>();
+        var shards        = sp.GetRequiredService<ShardRegistry>();
+        var manifest      = sp.GetRequiredService<ManifestManager>();
+        var originChecker = sp.GetRequiredService<JobOriginChecker>();
+        var logger        = sp.GetRequiredService<ILogger<DirectoryWatcher>>();
         return new DirectoryWatcher(config.WatchPath,
             onArrived: (jobName, jobPath) =>
             {
-                shards.GetOrCreate(jobName, jobPath);
+                var repo = shards.GetOrCreate(jobName, jobPath);
                 manifest.RecordArrival(jobPath, config.MachineName);
+                originChecker.ScheduleCheck(jobName, jobPath);
+                // After the settle window, close the "JobInit" era so that all
+                // subsequent FSW events from FileChangeHandler are classified "Runtime".
+                if (repo is not null)
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(config.JobSettleTimeSeconds));
+                            if (!repo.IsInitialScanDone())
+                                await repo.SetInitialScanDoneAsync();
+                        }
+                        catch (Exception) { }
+                    });
             },
             onDeparted: (jobName) =>
             {
+                originChecker.CancelCheck(jobName);
                 manifest.RecordDeparture(Path.Combine(config.WatchPath, jobName));
                 shards.Remove(jobName);
             },
@@ -95,6 +101,7 @@ try
 
     builder.Services.AddSingleton<FileChangeHandler>();
     builder.Services.AddSingleton<CatchUpScanner>();
+    builder.Services.AddSingleton<JobOriginChecker>();
     builder.Services.AddSingleton<FileMonitorService>();
     builder.Services.AddHostedService<Worker>();
 

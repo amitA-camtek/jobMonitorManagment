@@ -3,9 +3,8 @@ namespace FalconAuditService.Models;
 public class MonitorConfig
 {
     public string WatchPath                  { get; set; } = @"C:\job\";
-    public string GlobalDbPath               { get; set; } = @"C:\bis\auditlog\global.db";
-    public string ClassificationRulesPath    { get; set; } = @"C:\bis\auditlog\FileClassificationRules.json";
-    public string ParameterDescriptionsPath  { get; set; } = @"C:\bis\auditlog\ParameterDescriptions.json";
+    public string ClassificationRulesPath    { get; set; } = @"C:\bis\data\Apps\FileClassificationRules.json";
+    public string ParameterDescriptionsPath  { get; set; } = @"C:\bis\data\Apps\ParameterDescriptions.json";
     public int    ApiPort                    { get; set; } = 5100;
     public string ApiBindAddress             { get; set; } = "127.0.0.1";
     public int    DebounceMs                 { get; set; } = 500;
@@ -15,4 +14,10 @@ public class MonitorConfig
     public int    CatchUpYieldThreshold      { get; set; } = 50;
     public int    RecoveryDelayMs            { get; set; } = 30_000;  // delay before full re-hash after FSW overflow
     public string MachineName                { get; set; } = Environment.MachineName;
+
+    // ── Job origin detection ────────────────────────────────────────────────
+    public int    JobSettleTimeSeconds  { get; set; } = 30;   // wait after folder arrival before checking
+    public int    OriginSampleSize      { get; set; } = 10;   // max P1 files to NTFS-sample
+    public int    OriginDeltaMinutes    { get; set; } = 5;    // threshold: CreationTime − LastWriteTime > this → copied
+    public double OriginCopiedRatio     { get; set; } = 0.6;  // fraction of sample that must exceed delta
 }

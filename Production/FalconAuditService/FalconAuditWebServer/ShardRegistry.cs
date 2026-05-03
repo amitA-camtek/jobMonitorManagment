@@ -32,6 +32,7 @@ public class ShardRegistry : IDisposable
         try
         {
             Directory.CreateDirectory(auditDir);
+            File.SetAttributes(auditDir, File.GetAttributes(auditDir) | FileAttributes.Hidden);
             _logger.LogInformation("ShardRegistry: opening shard for job '{J}' at {D}", jobName, dbPath);
             var repo = new SqliteRepository(dbPath, _loggerFactory.CreateLogger<SqliteRepository>());
             // If two threads raced, GetOrAdd ensures only one repo wins; loser is disposed.

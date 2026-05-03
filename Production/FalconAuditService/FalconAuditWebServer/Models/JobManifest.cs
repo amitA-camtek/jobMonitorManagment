@@ -15,6 +15,12 @@ public class JobManifest
 
     [JsonPropertyName("history")]
     public List<HistoryEntry> History { get; set; } = new();
+
+    [JsonPropertyName("origin")]
+    public string? Origin { get; set; }   // "NewLocal" | "CopiedFromRemote" | "Unknown"
+
+    [JsonPropertyName("originDeterminedAt")]
+    public DateTime? OriginDeterminedAt { get; set; }
 }
 
 public class MachineTimestamp

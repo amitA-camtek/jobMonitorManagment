@@ -56,6 +56,26 @@ public class QueryRepository : IDisposable
                     cmd.CommandText = "SELECT COUNT(*), MIN(changed_at), MAX(changed_at), GROUP_CONCAT(DISTINCT machine_name) FROM audit_log";
                     using var r = cmd.ExecuteReader();
                     if (r.Read())
+                    {
+                        string? origin = null;
+                        string? jobCreatedAt = null;
+                        try
+                        {
+                            using var mc = conn.CreateCommand();
+                            mc.CommandText = "SELECT key, value FROM monitor_config WHERE key IN ('job_origin') " +
+                                             "UNION ALL " +
+                                             "SELECT key, value FROM schema_meta WHERE key = 'created_at_utc'";
+                            using var mr = mc.ExecuteReader();
+                            while (mr.Read())
+                            {
+                                var key = mr.GetString(0);
+                                var val = mr.GetString(1);
+                                if (key == "job_origin")     origin       = val;
+                                if (key == "created_at_utc") jobCreatedAt = val;
+                            }
+                        }
+                        catch { /* tables may not exist on very old shards */ }
+
                         result.Add(new JobSummary
                         {
                             JobName        = job,
@@ -64,8 +84,11 @@ public class QueryRepository : IDisposable
                             FirstEvent     = r.IsDBNull(1) ? "" : r.GetString(1),
                             LastEvent      = r.IsDBNull(2) ? "" : r.GetString(2),
                             Machines       = r.IsDBNull(3) ? "" : r.GetString(3),
-                            ShardSizeBytes = new FileInfo(shardPath).Length
+                            ShardSizeBytes = new FileInfo(shardPath).Length,
+                            Origin         = origin,
+                            JobCreatedAt   = jobCreatedAt
                         });
+                    }
                 }
             }
             catch (Exception ex) { _logger.LogWarning(ex, "QueryRepository: stats failed for {J}", job); }
@@ -104,7 +127,7 @@ public class QueryRepository : IDisposable
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText = $@"SELECT id,changed_at,event_type,filepath,rel_filepath,module,
-                owner_service,monitor_priority,machine_name,sha256_hash,file_description,change_summary,is_backfill,diff_text,login_user
+                owner_service,monitor_priority,machine_name,sha256_hash,file_description,change_summary,is_backfill,diff_text,login_user,setup_name,recipe_name,file_era
                 FROM audit_log WHERE {where} ORDER BY changed_at {order} LIMIT @ps OFFSET @off";
             BindFilter(cmd, f);
             cmd.Parameters.AddWithValue("@ps",  f.PageSize);
@@ -121,7 +144,10 @@ public class QueryRepository : IDisposable
                     ChangeSummary=r.IsDBNull(11)?"":r.GetString(11),
                     IsBackfill=!r.IsDBNull(12) && r.GetInt32(12)==1,
                     DiffText=r.IsDBNull(13)?null:r.GetString(13),
-                    LoginUser=r.IsDBNull(14)?null:r.GetString(14)
+                    LoginUser=r.IsDBNull(14)?null:r.GetString(14),
+                    Setup=r.IsDBNull(15)?null:r.GetString(15),
+                    Recipe=r.IsDBNull(16)?null:r.GetString(16),
+                    FileEra=r.IsDBNull(17)?null:r.GetString(17)
                 });
         }
         return (items, total);
@@ -187,17 +213,36 @@ public class QueryRepository : IDisposable
         return result;
     }
 
+    /// <summary>Returns the ISO-8601 timestamp of the earliest audit event for a job, or null.</summary>
+    public string? GetJobFirstEventTime(string jobName)
+    {
+        var shardPath = _discovery.ShardPath(jobName);
+        if (shardPath is null) return null;
+        var conn = GetConnection(shardPath);
+        if (conn is null) return null;
+        lock (conn)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT MIN(changed_at) FROM audit_log";
+            return cmd.ExecuteScalar()?.ToString();
+        }
+    }
+
     private static string BuildWhere(EventFilter f)
     {
         var clauses = new List<string> { "1=1" };
-        if (f.Module    is not null) clauses.Add("module            = @module");
-        if (f.Priority  is not null) clauses.Add("monitor_priority  = @priority");
-        if (f.Service   is not null) clauses.Add("owner_service     = @service");
-        if (f.EventType is not null) clauses.Add("event_type        = @type");
-        if (f.Machine   is not null) clauses.Add("machine_name      = @machine");
-        if (f.From      is not null) clauses.Add("changed_at       >= @from");
-        if (f.To        is not null) clauses.Add("changed_at       <= @to");
-        if (f.Path      is not null) clauses.Add("instr(filepath, @path) > 0");
+        if (f.Module         is not null) clauses.Add("module            = @module");
+        if (f.Priority       is not null) clauses.Add("monitor_priority  = @priority");
+        if (f.Service        is not null) clauses.Add("owner_service     = @service");
+        if (f.EventType      is not null) clauses.Add("event_type        = @type");
+        if (f.Machine        is not null) clauses.Add("machine_name      = @machine");
+        if (f.From           is not null) clauses.Add("changed_at       >= @from");
+        if (f.To             is not null) clauses.Add("changed_at       <= @to");
+        if (f.Path           is not null) clauses.Add("instr(filepath, @path) > 0");
+        if (f.FileEra        is not null) clauses.Add("file_era = @fileEra");
+        // ExcludeCreated is ignored when the caller is already filtering by a specific event type
+        if (f.ExcludeCreated && f.EventType is null)
+                                          clauses.Add("event_type        != 'Created'");
         return string.Join(" AND ", clauses);
     }
 
@@ -211,6 +256,7 @@ public class QueryRepository : IDisposable
         if (f.From      is not null) cmd.Parameters.AddWithValue("@from",     f.From);
         if (f.To        is not null) cmd.Parameters.AddWithValue("@to",       f.To);
         if (f.Path      is not null) cmd.Parameters.AddWithValue("@path",     f.Path);
+        if (f.FileEra   is not null) cmd.Parameters.AddWithValue("@fileEra",  f.FileEra);
     }
 
     public void Dispose()

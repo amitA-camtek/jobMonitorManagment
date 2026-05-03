@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 public class FileChangeHandler
 {
     private readonly ShardRegistry            _shards;
-    private readonly SqliteRepository         _globalRepo;
     private readonly FileClassifier           _classifier;
     private readonly ContentCache             _contentCache;
     private readonly ManifestManager          _manifest;
@@ -16,14 +15,13 @@ public class FileChangeHandler
     private readonly ILogger<FileChangeHandler> _logger;
 
     public FileChangeHandler(
-        ShardRegistry shards, SqliteRepository globalRepo,
+        ShardRegistry shards,
         FileClassifier classifier, ContentCache contentCache,
         ManifestManager manifest, ChangeDescriptionEnricher enricher,
         MonitorConfig config, LoginReader loginReader,
         ILogger<FileChangeHandler> logger)
     {
         _shards       = shards;
-        _globalRepo   = globalRepo;
         _classifier   = classifier;
         _contentCache = contentCache;
         _manifest     = manifest;
@@ -45,8 +43,13 @@ public class FileChangeHandler
             return;
         }
 
-        var repo     = GetRepo(ev.FullPath);
-        var cls      = _classifier.Classify(ev.FullPath);
+        var repo = GetRepo(ev.FullPath);
+        if (repo is null)
+        {
+            _logger.LogDebug("Skipping root-level file (no job). Path={P}", ev.FullPath);
+            return;
+        }
+        var cls = _classifier.Classify(ev.FullPath);
 
         // P4 files are not stored — classifier returns priority "P4" for them.
         if (cls.MonitorPriority == "P4")
@@ -148,6 +151,7 @@ public class FileChangeHandler
             ? ev.FullPath[(watch.Length)..].TrimStart('\\', '/')
             : ev.FullPath;
 
+        var (setup, recipe) = ExtractSetupAndRecipe(ev.FullPath);
         var entry = new AuditLogEntry
         {
             Filepath        = ev.FullPath,
@@ -164,7 +168,10 @@ public class FileChangeHandler
             FileDescription = cls.Description,
             ChangeSummary   = _enricher.Enrich(cls.MatchedPattern, changeType, diffText),
             OldFilepath     = changeType == "Renamed" ? ev.OldPath : null,
-            LoginUser       = _loginReader.GetCurrentUser()
+            LoginUser       = _loginReader.GetCurrentUser(),
+            Setup           = setup,
+            Recipe          = recipe,
+            FileEra         = repo.IsInitialScanDone() ? "Runtime" : "JobInit"
         };
 
         var bl = MakeBaseline(ev.FullPath, newHash ?? oldHash ?? "", newContent ?? oldContent);
@@ -187,15 +194,11 @@ public class FileChangeHandler
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Return the shard repo for the job that owns this file path.
-    /// Files directly under c:\job\ (e.g. status.ini) go to globalRepo.
-    /// </summary>
-    private SqliteRepository GetRepo(string filePath)
+    private SqliteRepository? GetRepo(string filePath)
     {
         var (jobName, jobPath) = ExtractJob(filePath);
-        if (jobName is null || jobPath is null) return _globalRepo;
-        return _shards.GetOrCreate(jobName, jobPath) ?? _globalRepo;
+        if (jobName is null || jobPath is null) return null;
+        return _shards.GetOrCreate(jobName, jobPath);
     }
 
     private (string? jobName, string? jobPath) ExtractJob(string filePath)
@@ -210,6 +213,25 @@ public class FileChangeHandler
 
         var jobName = relative[..sep];
         return (jobName, Path.Combine(watch, jobName));
+    }
+
+    // Parses Setup and Recipe from a full file path.
+    // Structure: {WatchPath}\{Job}\{Setup}\Recipes\{Recipe}\...
+    private (string? setup, string? recipe) ExtractSetupAndRecipe(string filePath)
+    {
+        var watch = _config.WatchPath.TrimEnd('\\', '/');
+        if (!filePath.StartsWith(watch, StringComparison.OrdinalIgnoreCase))
+            return (null, null);
+
+        var parts = filePath[(watch.Length)..].TrimStart('\\', '/')
+            .Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+        // parts[0]=Job  parts[1]=Setup  parts[2]="Recipes"  parts[3]=Recipe
+        var setup  = parts.Length > 1 ? parts[1] : null;
+        var recipe = parts.Length > 3 &&
+                     parts[2].Equals("Recipes", StringComparison.OrdinalIgnoreCase)
+                     ? parts[3] : null;
+        return (setup, recipe);
     }
 
     private static FileBaseline MakeBaseline(string path, string hash, string? content) =>

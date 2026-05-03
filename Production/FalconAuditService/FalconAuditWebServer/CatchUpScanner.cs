@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 public class CatchUpScanner
 {
     private readonly ShardRegistry             _shards;
-    private readonly SqliteRepository          _globalRepo;
     private readonly FileClassifier            _classifier;
     private readonly ContentCache              _contentCache;
     private readonly ChangeDescriptionEnricher _enricher;
@@ -22,13 +21,12 @@ public class CatchUpScanner
             ".properties", ".conf", ".config", ".bat", ".cmd", ".ps1", ".sql"
         };
 
-    public CatchUpScanner(ShardRegistry shards, SqliteRepository globalRepo,
+    public CatchUpScanner(ShardRegistry shards,
                            FileClassifier classifier, ContentCache contentCache,
                            ChangeDescriptionEnricher enricher,
                            MonitorConfig config, ILogger<CatchUpScanner> logger)
     {
         _shards       = shards;
-        _globalRepo   = globalRepo;
         _classifier   = classifier;
         _contentCache = contentCache;
         _enricher     = enricher;
@@ -104,6 +102,25 @@ public class CatchUpScanner
         }
         var sw       = System.Diagnostics.Stopwatch.StartNew();
 
+        // Per-job era cache: true = first ever scan of this shard (→ "JobInit"), false → "Runtime".
+        var jobInitFlags = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+        string EraForFile(string filePath)
+        {
+            var watch    = _config.WatchPath.TrimEnd('\\', '/');
+            var relative = filePath.StartsWith(watch, StringComparison.OrdinalIgnoreCase)
+                           ? filePath[(watch.Length)..].TrimStart('\\', '/') : filePath;
+            var sep      = relative.IndexOfAny(new[] { '\\', '/' });
+            if (sep <= 0) return "Runtime";
+            var jobName  = relative[..sep];
+            if (jobInitFlags.TryGetValue(jobName, out var cached)) return cached ? "JobInit" : "Runtime";
+            var jPath    = Path.Combine(watch, jobName);
+            var repo     = _shards.GetOrCreate(jobName, jPath);
+            bool isInit  = repo is not null && !repo.IsInitialScanDone();
+            jobInitFlags[jobName] = isInit;
+            return isInit ? "JobInit" : "Runtime";
+        }
+
         _logger.LogInformation("CatchUpScanner: starting reconciliation scan. Root={R}", scanRoot);
 
         var currentFiles = Directory
@@ -153,6 +170,7 @@ public class CatchUpScanner
             if (cls.MonitorPriority == "P4") continue;  // not stored
 
             var fileRepo = GetRepo(path);
+            if (fileRepo is null) continue;
             baselineMap.TryGetValue(path, out var bl);
 
             var rel = MakeRelPath(path);
@@ -175,7 +193,8 @@ public class CatchUpScanner
                     MachineName     = _config.MachineName,
                     FileDescription = cls.Description,
                     ChangeSummary   = _enricher.Enrich(cls.MatchedPattern, "Created", null),
-                    IsBackfill      = true
+                    IsBackfill      = true,
+                    FileEra         = EraForFile(path)
                 };
                 var baseline = new FileBaseline { Filepath = path, LastHash = hash,
                     LastSeen = DateTime.UtcNow.ToString("O"), LastContent = content };
@@ -206,7 +225,8 @@ public class CatchUpScanner
                     MachineName     = _config.MachineName,
                     FileDescription = cls.Description,
                     ChangeSummary   = _enricher.Enrich(cls.MatchedPattern, "Modified", diffText),
-                    IsBackfill      = true
+                    IsBackfill      = true,
+                    FileEra         = EraForFile(path)
                 };
                 var baseline = new FileBaseline { Filepath = path, LastHash = hash,
                     LastSeen = DateTime.UtcNow.ToString("O"), LastContent = newContent };
@@ -240,6 +260,7 @@ public class CatchUpScanner
             if (currentSet.Contains(bl.Filepath)) continue;
 
             var fileRepo = GetRepo(bl.Filepath);
+            if (fileRepo is null) continue;
             var cls2     = _classifier.Classify(bl.Filepath);
             if (cls2.MonitorPriority == "P4") continue;
             var entry2 = new AuditLogEntry
@@ -256,7 +277,8 @@ public class CatchUpScanner
                 MachineName     = _config.MachineName,
                 FileDescription = cls2.Description,
                 ChangeSummary   = _enricher.Enrich(cls2.MatchedPattern, "Deleted", null),
-                IsBackfill      = true
+                IsBackfill      = true,
+                FileEra         = EraForFile(bl.Filepath)
             };
             var dummyBaseline = new FileBaseline
             {
@@ -268,6 +290,15 @@ public class CatchUpScanner
             deleted++;
         }
 
+        // Persist initial_scan_done for every job that just ran its first-ever scan.
+        foreach (var (jn, wasInit) in jobInitFlags)
+        {
+            if (!wasInit) continue;
+            var jp   = Path.Combine(_config.WatchPath.TrimEnd('\\', '/'), jn);
+            var repo = _shards.GetOrCreate(jn, jp);
+            if (repo is not null) await repo.SetInitialScanDoneAsync();
+        }
+
         sw.Stop();
         _logger.LogInformation(
             "CatchUpScanner: complete. Unchanged={U} Created={C} Modified={M} Deleted={D} Elapsed={E}ms",
@@ -276,19 +307,19 @@ public class CatchUpScanner
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private SqliteRepository GetRepo(string filePath)
+    private SqliteRepository? GetRepo(string filePath)
     {
         var watch = _config.WatchPath.TrimEnd('\\', '/');
         if (!filePath.StartsWith(watch, StringComparison.OrdinalIgnoreCase))
-            return _globalRepo;
+            return null;
 
         var relative = filePath[(watch.Length)..].TrimStart('\\', '/');
         var sep      = relative.IndexOfAny(new[] { '\\', '/' });
-        if (sep <= 0) return _globalRepo;
+        if (sep <= 0) return null;
 
         var jobName = relative[..sep];
         var jobPath = Path.Combine(watch, jobName);
-        return _shards.GetOrCreate(jobName, jobPath) ?? _globalRepo;
+        return _shards.GetOrCreate(jobName, jobPath);
     }
 
     private string MakeRelPath(string filePath)
@@ -312,8 +343,6 @@ public class CatchUpScanner
             var sep = rel.IndexOfAny(new[] { '\\', '/' });
             if (sep > 0) jobNames.Add(rel[..sep]);
         }
-
-        result.AddRange(await _globalRepo.GetAllBaselinesAsync());
 
         foreach (var jn in jobNames)
         {

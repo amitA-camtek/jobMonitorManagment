@@ -30,7 +30,7 @@ public class ManifestManager
         await sem.WaitAsync();
         try
         {
-            var manifest = ReadManifest(manifestPath);
+            var manifest = ReadManifestFile(manifestPath);
             if (manifest is null) return;
             var last = manifest.History.LastOrDefault(e => e.To == null);
             if (last is null) return;
@@ -62,7 +62,7 @@ public class ManifestManager
         sem.Wait();
         try
         {
-            var manifest = ReadManifest(manifestPath) ?? new JobManifest
+            var manifest = ReadManifestFile(manifestPath) ?? new JobManifest
             {
                 JobName  = jobName,
                 Created  = new MachineTimestamp { Machine = machineName, At = DateTime.UtcNow }
@@ -112,7 +112,7 @@ public class ManifestManager
         sem.Wait();
         try
         {
-            var manifest = ReadManifest(manifestPath);
+            var manifest = ReadManifestFile(manifestPath);
             if (manifest is null) return;
 
             var last = manifest.History.LastOrDefault();
@@ -128,17 +128,41 @@ public class ManifestManager
         finally { sem.Release(); }
     }
 
-    private JobManifest? ReadManifest(string path)
+    /// <summary>Read manifest for a job folder path (public — used by JobOriginChecker).</summary>
+    public JobManifest? ReadManifest(string jobPath)
     {
-        if (!File.Exists(path)) return null;
+        var manifestPath = Path.Combine(jobPath, ".audit", "manifest.json");
+        return ReadManifestFile(manifestPath);
+    }
+
+    /// <summary>Persist the detected origin classification into the manifest (async, thread-safe).</summary>
+    public async Task UpdateOriginAsync(string jobPath, string origin)
+    {
+        var manifestPath = Path.Combine(jobPath, ".audit", "manifest.json");
+        var sem = LockFor(manifestPath);
+        await sem.WaitAsync();
+        try
+        {
+            var manifest = ReadManifestFile(manifestPath);
+            if (manifest is null) return;
+            manifest.Origin = origin;
+            manifest.OriginDeterminedAt = DateTime.UtcNow;
+            WriteManifest(manifestPath, manifest);
+        }
+        finally { sem.Release(); }
+    }
+
+    private JobManifest? ReadManifestFile(string manifestPath)
+    {
+        if (!File.Exists(manifestPath)) return null;
         try
         {
             return JsonSerializer.Deserialize<JobManifest>(
-                File.ReadAllText(path), _jsonOpts);
+                File.ReadAllText(manifestPath), _jsonOpts);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "ManifestManager: could not read {P}", path);
+            _logger.LogWarning(ex, "ManifestManager: could not read {P}", manifestPath);
             return null;
         }
     }

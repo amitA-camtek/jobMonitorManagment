@@ -9,6 +9,7 @@ public class SqliteRepository : IDisposable
     private readonly SqliteConnection _conn;
     private readonly SqliteConnection _readConn;
     private readonly SemaphoreSlim    _writeLock = new(1, 1);
+    private volatile bool             _disposed;
     private readonly ILogger<SqliteRepository> _logger;
 
     public SqliteRepository(string dbPath, ILogger<SqliteRepository> logger)
@@ -68,7 +69,10 @@ public class SqliteRepository : IDisposable
                 change_summary   TEXT    NOT NULL DEFAULT '',
                 is_backfill      INTEGER NOT NULL DEFAULT 0,
                 old_filepath     TEXT    NULL,
-                login_user       TEXT    NULL
+                login_user       TEXT    NULL,
+                setup_name       TEXT    NULL,
+                recipe_name      TEXT    NULL,
+                file_era         TEXT    NULL
             );
 
             CREATE INDEX IF NOT EXISTS ix_audit_log_changed_at        ON audit_log (changed_at DESC);
@@ -80,6 +84,7 @@ public class SqliteRepository : IDisposable
             CREATE INDEX IF NOT EXISTS ix_audit_log_rel_filepath      ON audit_log (rel_filepath);
             CREATE INDEX IF NOT EXISTS ix_audit_log_module_changed_at ON audit_log (module, changed_at DESC);
             CREATE INDEX IF NOT EXISTS ix_audit_log_filepath          ON audit_log (filepath);
+            CREATE INDEX IF NOT EXISTS ix_audit_log_file_era          ON audit_log (file_era);
 
             CREATE TABLE IF NOT EXISTS file_baselines (
                 filepath     TEXT PRIMARY KEY,
@@ -93,7 +98,7 @@ public class SqliteRepository : IDisposable
                 key   TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
-            INSERT OR IGNORE INTO schema_meta (key, value) VALUES ('schema_version', '4');
+            INSERT OR IGNORE INTO schema_meta (key, value) VALUES ('schema_version', '5');
             INSERT OR IGNORE INTO schema_meta (key, value) VALUES ('audit_db_version', '1');
 
             CREATE TABLE IF NOT EXISTS monitor_config (
@@ -143,6 +148,13 @@ public class SqliteRepository : IDisposable
             SetSchemaVersion(4);
             _logger.LogInformation("SqliteRepository: migrated schema to v4 (login_user).");
         }
+
+        if (version < 5)
+        {
+            AlterTableAddColumns(new[] { "setup_name TEXT NULL", "recipe_name TEXT NULL" });
+            SetSchemaVersion(5);
+            _logger.LogInformation("SqliteRepository: migrated schema to v5 (setup_name, recipe_name).");
+        }
     }
 
     private void AlterTableAddColumns(string[] columnDefs)
@@ -175,6 +187,7 @@ public class SqliteRepository : IDisposable
 
     public async Task InsertAuditEventAsync(AuditLogEntry e, FileBaseline baseline)
     {
+        if (_disposed) return;
         await _writeLock.WaitAsync();
         try
         {
@@ -185,8 +198,9 @@ public class SqliteRepository : IDisposable
                 INSERT INTO audit_log
                   (changed_at, event_type, filepath, rel_filepath, module, owner_service,
                    monitor_priority, machine_name, sha256_hash, old_content, diff_text,
-                   file_description, change_summary, is_backfill, old_filepath, login_user)
-                VALUES (@ca,@et,@fp,@rfp,@mod,@svc,@pri,@mn,@hash,@oc,@dt,@fd,@cs,@ib,@ofp,@lu)";
+                   file_description, change_summary, is_backfill, old_filepath, login_user,
+                   setup_name, recipe_name, file_era)
+                VALUES (@ca,@et,@fp,@rfp,@mod,@svc,@pri,@mn,@hash,@oc,@dt,@fd,@cs,@ib,@ofp,@lu,@sn,@rn,@fe)";
             ins.Parameters.AddWithValue("@ca",  e.ChangedAt);
             ins.Parameters.AddWithValue("@et",  e.EventType);
             ins.Parameters.AddWithValue("@fp",  e.Filepath);
@@ -203,6 +217,9 @@ public class SqliteRepository : IDisposable
             ins.Parameters.AddWithValue("@ib",  e.IsBackfill ? 1 : 0);
             ins.Parameters.AddWithValue("@ofp", (object?)e.OldFilepath  ?? DBNull.Value);
             ins.Parameters.AddWithValue("@lu",  (object?)e.LoginUser    ?? DBNull.Value);
+            ins.Parameters.AddWithValue("@sn",  (object?)e.Setup        ?? DBNull.Value);
+            ins.Parameters.AddWithValue("@rn",  (object?)e.Recipe       ?? DBNull.Value);
+            ins.Parameters.AddWithValue("@fe",  (object?)e.FileEra      ?? DBNull.Value);
             await ins.ExecuteNonQueryAsync();
 
             using var upb = _conn.CreateCommand();
@@ -228,6 +245,7 @@ public class SqliteRepository : IDisposable
     /// <summary>Update a baseline entry without writing an audit event (used for unchanged files in CatchUpScanner).</summary>
     public async Task UpsertBaselineAsync(FileBaseline baseline)
     {
+        if (_disposed) return;
         await _writeLock.WaitAsync();
         try
         {
@@ -248,111 +266,56 @@ public class SqliteRepository : IDisposable
         finally { _writeLock.Release(); }
     }
 
-    /// <summary>
-    /// Load MonitorConfig from the monitor_config table.
-    /// Inserts defaults on first run (empty table) so the row-set always exists.
-    /// </summary>
-    public MonitorConfig LoadConfig()
-    {
-        var defaults = new MonitorConfig();
-        var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["watch_path"]                  = defaults.WatchPath,
-            ["global_db_path"]              = defaults.GlobalDbPath,
-            ["classification_rules_path"]   = defaults.ClassificationRulesPath,
-            ["parameter_descriptions_path"] = defaults.ParameterDescriptionsPath,
-            ["api_port"]                    = defaults.ApiPort.ToString(),
-            ["api_bind_address"]            = defaults.ApiBindAddress,
-            ["debounce_ms"]                 = defaults.DebounceMs.ToString(),
-            ["fsw_buffer_bytes"]            = defaults.FswBufferBytes.ToString(),
-            ["max_content_bytes"]           = defaults.MaxContentBytes.ToString(),
-            ["capture_content"]             = defaults.CaptureContent.ToString(),
-            ["catch_up_yield_threshold"]    = defaults.CatchUpYieldThreshold.ToString(),
-            ["recovery_delay_ms"]           = defaults.RecoveryDelayMs.ToString()
-        };
-
-        // Insert defaults on first run (INSERT OR IGNORE — does not overwrite user settings)
-        _writeLock.Wait();
-        try
-        {
-            using var tx = _conn.BeginTransaction();
-            foreach (var (k, v) in data)
-            {
-                using var ins = _conn.CreateCommand();
-                ins.Transaction = tx;
-                ins.CommandText = "INSERT OR IGNORE INTO monitor_config (key, value) VALUES (@k, @v)";
-                ins.Parameters.AddWithValue("@k", k);
-                ins.Parameters.AddWithValue("@v", v);
-                ins.ExecuteNonQuery();
-            }
-            tx.Commit();
-        }
-        finally { _writeLock.Release(); }
-
-        // Read all config (may now include user-edited values)
-        using var cmd = _readConn.CreateCommand();
-        cmd.CommandText = "SELECT key, value FROM monitor_config";
-        using var r = cmd.ExecuteReader();
-        while (r.Read()) data[r.GetString(0)] = r.GetString(1);
-
-        var cfg = new MonitorConfig();
-        if (data.TryGetValue("watch_path",                  out var s)) cfg.WatchPath                 = s;
-        if (data.TryGetValue("global_db_path",              out s))     cfg.GlobalDbPath               = s;
-        if (data.TryGetValue("classification_rules_path",   out s))     cfg.ClassificationRulesPath    = s;
-        if (data.TryGetValue("parameter_descriptions_path", out s))     cfg.ParameterDescriptionsPath  = s;
-        if (data.TryGetValue("api_bind_address",            out s))     cfg.ApiBindAddress             = s;
-        if (data.TryGetValue("api_port",           out s) && int.TryParse(s,  out var i)) cfg.ApiPort                  = i;
-        if (data.TryGetValue("debounce_ms",        out s) && int.TryParse(s,  out i))     cfg.DebounceMs               = i;
-        if (data.TryGetValue("fsw_buffer_bytes",   out s) && int.TryParse(s,  out i))     cfg.FswBufferBytes           = i;
-        if (data.TryGetValue("catch_up_yield_threshold", out s) && int.TryParse(s, out i)) cfg.CatchUpYieldThreshold   = i;
-        if (data.TryGetValue("recovery_delay_ms",  out s) && int.TryParse(s,  out i))     cfg.RecoveryDelayMs         = i;
-        if (data.TryGetValue("max_content_bytes",  out s) && long.TryParse(s, out var l)) cfg.MaxContentBytes         = l;
-        if (data.TryGetValue("capture_content",    out s) && bool.TryParse(s, out var b)) cfg.CaptureContent          = b;
-        // MachineName always reflects the actual machine — not from stored config
-        return cfg;
-    }
-
     // ── file_baselines ───────────────────────────────────────────────────────
 
     public async Task<FileBaseline?> GetBaselineAsync(string filepath)
     {
-        using var cmd = _readConn.CreateCommand();
-        cmd.CommandText =
-            "SELECT filepath, last_hash, last_seen, last_content " +
-            "FROM file_baselines WHERE filepath=@fp";
-        cmd.Parameters.AddWithValue("@fp", filepath);
-        using var r = await cmd.ExecuteReaderAsync();
-        if (!await r.ReadAsync()) return null;
-        return new FileBaseline
+        try
         {
-            Filepath    = r.GetString(0),
-            LastHash    = r.GetString(1),
-            LastSeen    = r.GetString(2),
-            LastContent = r.IsDBNull(3) ? null : r.GetString(3)
-        };
-    }
-
-    public async Task<List<FileBaseline>> GetAllBaselinesAsync()
-    {
-        var list = new List<FileBaseline>();
-        using var cmd = _readConn.CreateCommand();
-        cmd.CommandText =
-            "SELECT filepath, last_hash, last_seen, last_content " +
-            "FROM file_baselines";
-        using var r = await cmd.ExecuteReaderAsync();
-        while (await r.ReadAsync())
-            list.Add(new FileBaseline
+            using var cmd = _readConn.CreateCommand();
+            cmd.CommandText =
+                "SELECT filepath, last_hash, last_seen, last_content " +
+                "FROM file_baselines WHERE filepath=@fp";
+            cmd.Parameters.AddWithValue("@fp", filepath);
+            using var r = await cmd.ExecuteReaderAsync();
+            if (!await r.ReadAsync()) return null;
+            return new FileBaseline
             {
                 Filepath    = r.GetString(0),
                 LastHash    = r.GetString(1),
                 LastSeen    = r.GetString(2),
                 LastContent = r.IsDBNull(3) ? null : r.GetString(3)
-            });
-        return list;
+            };
+        }
+        catch (Exception) when (_disposed) { return null; }
+    }
+
+    public async Task<List<FileBaseline>> GetAllBaselinesAsync()
+    {
+        try
+        {
+            var list = new List<FileBaseline>();
+            using var cmd = _readConn.CreateCommand();
+            cmd.CommandText =
+                "SELECT filepath, last_hash, last_seen, last_content " +
+                "FROM file_baselines";
+            using var r = await cmd.ExecuteReaderAsync();
+            while (await r.ReadAsync())
+                list.Add(new FileBaseline
+                {
+                    Filepath    = r.GetString(0),
+                    LastHash    = r.GetString(1),
+                    LastSeen    = r.GetString(2),
+                    LastContent = r.IsDBNull(3) ? null : r.GetString(3)
+                });
+            return list;
+        }
+        catch (Exception) when (_disposed) { return new(); }
     }
 
     public async Task DeleteBaselineAsync(string filepath)
     {
+        if (_disposed) return;
         await _writeLock.WaitAsync();
         try
         {
@@ -364,8 +327,44 @@ public class SqliteRepository : IDisposable
         finally { _writeLock.Release(); }
     }
 
+    // ── monitor_config ───────────────────────────────────────────────────────
+
+    public async Task SetConfigValueAsync(string key, string value)
+    {
+        if (_disposed) return;
+        await _writeLock.WaitAsync();
+        try
+        {
+            using var cmd = _conn.CreateCommand();
+            cmd.CommandText = "INSERT OR REPLACE INTO monitor_config (key, value) VALUES (@k, @v)";
+            cmd.Parameters.AddWithValue("@k", key);
+            cmd.Parameters.AddWithValue("@v", value);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        finally { _writeLock.Release(); }
+    }
+
+    public string? GetConfigValue(string key)
+    {
+        try
+        {
+            using var cmd = _readConn.CreateCommand();
+            cmd.CommandText = "SELECT value FROM monitor_config WHERE key=@k";
+            cmd.Parameters.AddWithValue("@k", key);
+            return cmd.ExecuteScalar()?.ToString();
+        }
+        catch (Exception) when (_disposed) { return null; }
+    }
+
+    public bool IsInitialScanDone()
+        => GetConfigValue("initial_scan_done") is not null;
+
+    public Task SetInitialScanDoneAsync()
+        => SetConfigValueAsync("initial_scan_done", "true");
+
     public void Dispose()
     {
+        _disposed = true;
         _writeLock.Dispose();
         _conn.Dispose();
         _readConn.Dispose();
