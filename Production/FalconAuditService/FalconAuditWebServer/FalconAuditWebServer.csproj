@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net7.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FalconAuditService</AssemblyName>
@@ -10,11 +10,11 @@
 
   <ItemGroup>
     <PackageReference Include="DiffPlex" Version="1.7.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.*" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.*" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.*" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.*" />
-    <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="7.0.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.*" />
+    <PackageReference Include="Serilog.AspNetCore" Version="7.0.*" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="7.0.*" />
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.*" />
     <PackageReference Include="Serilog.Sinks.EventLog" Version="3.1.*" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.*" />

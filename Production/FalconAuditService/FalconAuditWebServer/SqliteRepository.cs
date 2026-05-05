@@ -17,10 +17,12 @@ public class SqliteRepository : IDisposable
         _logger = logger;
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
-        _conn = new SqliteConnection($"Data Source={dbPath}");
+        // Pooling=False ensures Dispose immediately releases the OS file handle
+        // so the .audit\ directory can be removed when a job is evicted.
+        _conn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
         _conn.Open();
 
-        _readConn = new SqliteConnection($"Data Source={dbPath}");
+        _readConn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
         _readConn.Open();
 
         using var rp = _readConn.CreateCommand();

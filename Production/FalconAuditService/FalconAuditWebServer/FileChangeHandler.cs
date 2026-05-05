@@ -12,6 +12,7 @@ public class FileChangeHandler
     private readonly ChangeDescriptionEnricher _enricher;
     private readonly MonitorConfig            _config;
     private readonly LoginReader              _loginReader;
+    private readonly ShardEvictionService     _eviction;
     private readonly ILogger<FileChangeHandler> _logger;
 
     public FileChangeHandler(
@@ -19,6 +20,7 @@ public class FileChangeHandler
         FileClassifier classifier, ContentCache contentCache,
         ManifestManager manifest, ChangeDescriptionEnricher enricher,
         MonitorConfig config, LoginReader loginReader,
+        ShardEvictionService eviction,
         ILogger<FileChangeHandler> logger)
     {
         _shards       = shards;
@@ -28,6 +30,7 @@ public class FileChangeHandler
         _enricher     = enricher;
         _config       = config;
         _loginReader  = loginReader;
+        _eviction     = eviction;
         _logger       = logger;
     }
 
@@ -189,6 +192,23 @@ public class FileChangeHandler
         {
             await repo.DeleteBaselineAsync(ev.FullPath);
             _contentCache.Remove(ev.FullPath);
+        }
+
+        // Self-eviction: a Deleted event that empties the job folder schedules a
+        // shard cleanup so the user's `Remove-Item -Recurse` can finish on retry
+        // (SQLite handles released, .audit\ removed). Any non-Deleted event on
+        // the same job cancels a pending eviction.
+        if (jobName is not null && jobPath is not null)
+        {
+            if (ev.ChangeType == WatcherChangeTypes.Deleted &&
+                ShardEvictionService.IsJobFolderEffectivelyEmpty(jobPath))
+            {
+                _eviction.Schedule(jobName, jobPath);
+            }
+            else if (ev.ChangeType != WatcherChangeTypes.Deleted)
+            {
+                _eviction.Cancel(jobName);
+            }
         }
     }
 

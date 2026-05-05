@@ -45,6 +45,7 @@ try
     builder.Services.AddSingleton<ContentCache>();
     builder.Services.AddSingleton<ShardRegistry>();
     builder.Services.AddSingleton<ManifestManager>();
+    builder.Services.AddSingleton<ShardEvictionService>();
 
     builder.Services.AddSingleton(sp =>
     {

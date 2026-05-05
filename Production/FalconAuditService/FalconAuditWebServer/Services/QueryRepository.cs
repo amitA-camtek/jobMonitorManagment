@@ -15,6 +15,15 @@ public class QueryRepository : IDisposable
     public QueryRepository(JobDiscoveryService discovery, ILogger<QueryRepository> logger)
     { _discovery=discovery; _logger=logger; }
 
+    /// <summary>Close and drop the cached read connection for a shard whose .audit\ directory is being deleted.</summary>
+    public void CloseShard(string dbPath)
+    {
+        if (_connections.TryRemove(dbPath, out var conn))
+        {
+            try { conn.Dispose(); } catch { }
+        }
+    }
+
     private SqliteConnection? GetConnection(string dbPath)
     {
         if (_connections.TryGetValue(dbPath, out var existing)) return existing;
@@ -23,7 +32,7 @@ public class QueryRepository : IDisposable
             if (_connections.TryGetValue(dbPath, out existing)) return existing;
             try
             {
-                var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
+                var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
                 conn.Open();
                 using var p = conn.CreateCommand();
                 p.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=3000;";
