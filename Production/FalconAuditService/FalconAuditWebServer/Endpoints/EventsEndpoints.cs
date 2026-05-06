@@ -2,14 +2,14 @@ namespace FalconAuditWebServer.Endpoints;
 
 using FalconAuditWebServer.Models;
 using FalconAuditWebServer.Services;
-using Microsoft.AspNetCore.Authorization;
 
 public static class EventsEndpoints
 {
     public static void Map(RouteGroupBuilder api)
     {
         api.MapGet("/jobs/{jobName}/events", GetEvents);
-        api.MapGet("/jobs/{jobName}/events/{id:long}", GetEvent);
+        api.MapGet("/jobs/{jobName}/events/{id:long}", GetEvent)
+           .RequireAuthorization("AuditorOnly");
         api.MapGet("/jobs/{jobName}/report", GetReport);
     }
 
@@ -23,6 +23,9 @@ public static class EventsEndpoints
     {
         pageSize = Math.Min(Math.Max(pageSize, 1), 500);
         page     = Math.Max(page, 1);
+        if (!string.Equals(sort, "asc",  StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(sort, "desc", StringComparison.OrdinalIgnoreCase))
+            return Results.BadRequest("Invalid sort direction. Use 'asc' or 'desc'.");
         var filter = new EventFilter
         {
             Module=module, Priority=priority, Service=service, EventType=eventType,
@@ -34,7 +37,6 @@ public static class EventsEndpoints
         return Results.Ok(new { Total = total, Page = page, PageSize = pageSize, Items = items });
     }
 
-    [Authorize(Policy = "AuditorOnly")]
     private static IResult GetEvent(string jobName, long id, QueryRepository repo)
     {
         var detail = repo.GetEvent(jobName, id);
@@ -75,7 +77,7 @@ public static class EventsEndpoints
             From        = from,
             To          = to,
             Total       = total,
-            GeneratedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            GeneratedAt = DateTimeOffset.UtcNow.ToString("O"),
             Items       = items
         });
     }
@@ -107,8 +109,9 @@ public static class EventsEndpoints
               .AppendLine(CsvField(e.DiffText ?? ""));
         }
 
+        var safeJobName = System.Text.RegularExpressions.Regex.Replace(jobName, @"[^\w\-]", "_");
         ctx.Response.Headers["Content-Disposition"] =
-            $"attachment; filename=\"{jobName}-report.csv\"";
+            $"attachment; filename=\"{safeJobName}-report.csv\"";
         return Results.Content(sb.ToString(), "text/csv; charset=utf-8");
     }
 

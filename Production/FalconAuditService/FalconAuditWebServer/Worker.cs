@@ -53,7 +53,7 @@ public class Worker : BackgroundService
         _logger.LogInformation("FalconAuditService FSW live.");
 
         // Step 2: enumerate existing job folders (opens shards, records arrival in manifest)
-        _dirWatcher.EnumerateExisting();
+        await _dirWatcher.EnumerateExistingAsync();
 
         // Step 3: run catch-up scan in PARALLEL across all jobs. Runs after FSW
         // is already live, so any live event during catch-up is queued and processed.
@@ -92,7 +92,7 @@ public class Worker : BackgroundService
         foreach (var jobName in _shards.JobNames.ToList())
         {
             var jobPath = Path.Combine(_config.WatchPath, jobName);
-            try { _manifest.RecordDeparture(jobPath); }
+            try { await _manifest.RecordDepartureAsync(jobPath); }
             catch (Exception ex) { _logger.LogWarning(ex, "Could not record departure for {J}", jobName); }
         }
 

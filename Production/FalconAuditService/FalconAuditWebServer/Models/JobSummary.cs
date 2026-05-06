@@ -3,6 +3,7 @@ namespace FalconAuditWebServer.Models;
 public record JobSummary
 {
     public string  JobName        { get; init; } = "";
+    [System.Text.Json.Serialization.JsonIgnore]
     public string  ShardPath      { get; init; } = "";
     public long    TotalEvents    { get; init; }
     public string  FirstEvent     { get; init; } = "";

@@ -3,7 +3,7 @@ namespace FalconAuditService;
 using FalconAuditService.Models;
 using Microsoft.Extensions.Logging;
 
-public class CatchUpScanner
+public class CatchUpScanner : IDisposable
 {
     private readonly ShardRegistry             _shards;
     private readonly FileClassifier            _classifier;
@@ -352,6 +352,11 @@ public class CatchUpScanner
             result.AddRange(await repo.GetAllBaselinesAsync());
         }
         return result;
+    }
+
+    public void Dispose()
+    {
+        _guard.Dispose();
     }
 
     private async Task<string?> ReadIfP1Async(string path, string priority, long size)

@@ -6,14 +6,14 @@ public class DirectoryWatcher : IDisposable
 {
     private FileSystemWatcher?            _watcher;
     private readonly string               _watchPath;
-    private readonly Action<string, string> _onArrived;   // (jobName, jobFullPath)
-    private readonly Action<string>       _onDeparted;    // (jobName)
+    private readonly Func<string, string, Task> _onArrived;   // (jobName, jobFullPath)
+    private readonly Func<string, Task>   _onDeparted;        // (jobName)
     private readonly ILogger<DirectoryWatcher> _logger;
 
     public DirectoryWatcher(
         string watchPath,
-        Action<string, string> onArrived,
-        Action<string> onDeparted,
+        Func<string, string, Task> onArrived,
+        Func<string, Task> onDeparted,
         ILogger<DirectoryWatcher> logger)
     {
         _watchPath  = watchPath;
@@ -48,14 +48,14 @@ public class DirectoryWatcher : IDisposable
     }
 
     /// <summary>Enumerate existing job folders at startup — fires onArrived for each.</summary>
-    public void EnumerateExisting()
+    public async Task EnumerateExistingAsync()
     {
         if (!Directory.Exists(_watchPath)) return;
         foreach (var dir in Directory.EnumerateDirectories(_watchPath))
         {
             var name = Path.GetFileName(dir);
             if (!string.IsNullOrEmpty(name))
-                _onArrived(name, dir);
+                await _onArrived(name, dir);
         }
     }
 
@@ -63,22 +63,29 @@ public class DirectoryWatcher : IDisposable
     {
         if (string.IsNullOrEmpty(e.Name)) return;
         _logger.LogInformation("DirectoryWatcher: job folder arrived — '{N}'.", e.Name);
-        _onArrived(e.Name!, e.FullPath);
+        FireAndLog(_onArrived(e.Name!, e.FullPath), "onArrived", e.Name);
     }
 
     private void OnDeleted(object _, FileSystemEventArgs e)
     {
         if (string.IsNullOrEmpty(e.Name)) return;
         _logger.LogInformation("DirectoryWatcher: job folder departed — '{N}'.", e.Name);
-        _onDeparted(e.Name!);
+        FireAndLog(_onDeparted(e.Name!), "onDeparted", e.Name);
     }
 
     private void OnRenamed(object _, RenamedEventArgs e)
     {
         _logger.LogInformation("DirectoryWatcher: job folder renamed '{O}' → '{N}'.",
                                 e.OldName, e.Name);
-        if (!string.IsNullOrEmpty(e.OldName)) _onDeparted(e.OldName!);
-        if (!string.IsNullOrEmpty(e.Name))    _onArrived(e.Name!, e.FullPath);
+        if (!string.IsNullOrEmpty(e.OldName)) FireAndLog(_onDeparted(e.OldName!), "onDeparted", e.OldName);
+        if (!string.IsNullOrEmpty(e.Name))    FireAndLog(_onArrived(e.Name!, e.FullPath), "onArrived", e.Name);
+    }
+
+    private void FireAndLog(Task task, string handler, string? name)
+    {
+        _ = task.ContinueWith(t =>
+            _logger.LogError(t.Exception, "DirectoryWatcher: {H} failed for '{N}'.", handler, name),
+            TaskContinuationOptions.OnlyOnFaulted);
     }
 
     public void Dispose() => _watcher?.Dispose();

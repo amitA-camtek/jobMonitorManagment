@@ -5,7 +5,7 @@ using System.Text.Json;
 using FalconAuditService.Models;
 using Microsoft.Extensions.Logging;
 
-public class ManifestManager
+public class ManifestManager : IDisposable
 {
     private static readonly JsonSerializerOptions _jsonOpts =
         new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -45,7 +45,7 @@ public class ManifestManager
     /// Creates manifest.json if absent; appends a new history entry if the
     /// last entry belongs to a different machine; no-ops if already open for this machine.
     /// </summary>
-    public void RecordArrival(string jobPath, string machineName)
+    public async Task RecordArrivalAsync(string jobPath, string machineName)
     {
         var auditDir     = Path.Combine(jobPath, ".audit");
         var manifestPath = Path.Combine(auditDir, "manifest.json");
@@ -59,13 +59,13 @@ public class ManifestManager
         }
 
         var sem = LockFor(manifestPath);
-        sem.Wait();
+        await sem.WaitAsync();
         try
         {
             var manifest = ReadManifestFile(manifestPath) ?? new JobManifest
             {
                 JobName  = jobName,
-                Created  = new MachineTimestamp { Machine = machineName, At = DateTime.UtcNow }
+                Created  = new MachineTimestamp { Machine = machineName, At = DateTimeOffset.UtcNow }
             };
 
             var last = manifest.History.LastOrDefault();
@@ -74,7 +74,7 @@ public class ManifestManager
             if (last?.To == null && last is not null && !string.Equals(last.Machine, machineName,
                                                     StringComparison.OrdinalIgnoreCase))
             {
-                last.To = DateTime.UtcNow;
+                last.To = DateTimeOffset.UtcNow;
                 _logger.LogInformation("ManifestManager: closed entry for {M} on job '{J}'.",
                                         last.Machine, jobName);
             }
@@ -87,7 +87,7 @@ public class ManifestManager
                 manifest.History.Add(new HistoryEntry
                 {
                     Machine = machineName,
-                    From    = DateTime.UtcNow,
+                    From    = DateTimeOffset.UtcNow,
                     To      = null,
                     Events  = 0
                 });
@@ -104,12 +104,12 @@ public class ManifestManager
     /// Called when this machine releases ownership (service stop, job folder removed).
     /// Closes the open history entry by setting its 'to' timestamp.
     /// </summary>
-    public void RecordDeparture(string jobPath)
+    public async Task RecordDepartureAsync(string jobPath)
     {
         var manifestPath = Path.Combine(jobPath, ".audit", "manifest.json");
 
         var sem = LockFor(manifestPath);
-        sem.Wait();
+        await sem.WaitAsync();
         try
         {
             var manifest = ReadManifestFile(manifestPath);
@@ -118,14 +118,19 @@ public class ManifestManager
             var last = manifest.History.LastOrDefault();
             if (last?.To == null && last is not null)
             {
-                last.To = DateTime.UtcNow;
+                last.To = DateTimeOffset.UtcNow;
                 WriteManifest(manifestPath, manifest);
                 _logger.LogInformation(
                     "ManifestManager: departure recorded for job '{J}'.",
                     Path.GetFileName(jobPath.TrimEnd('\\', '/')));
             }
         }
-        finally { sem.Release(); }
+        finally
+        {
+            sem.Release();
+            // Remove the per-path lock entry so its WaitHandle is released when the job departs.
+            _locks.TryRemove(manifestPath, out _);
+        }
     }
 
     /// <summary>Read manifest for a job folder path (public — used by JobOriginChecker).</summary>
@@ -146,7 +151,7 @@ public class ManifestManager
             var manifest = ReadManifestFile(manifestPath);
             if (manifest is null) return;
             manifest.Origin = origin;
-            manifest.OriginDeterminedAt = DateTime.UtcNow;
+            manifest.OriginDeterminedAt = DateTimeOffset.UtcNow;
             WriteManifest(manifestPath, manifest);
         }
         finally { sem.Release(); }
@@ -165,6 +170,12 @@ public class ManifestManager
             _logger.LogWarning(ex, "ManifestManager: could not read {P}", manifestPath);
             return null;
         }
+    }
+
+    public void Dispose()
+    {
+        foreach (var sem in _locks.Values) sem.Dispose();
+        _locks.Clear();
     }
 
     private void WriteManifest(string path, JobManifest manifest)

@@ -6,6 +6,7 @@ public record FileHistoryItem
     public string  ChangedAt   { get; init; } = "";
     public string  EventType   { get; init; } = "";
     public string  MachineName { get; init; } = "";
+    [System.Text.Json.Serialization.JsonIgnore]
     public string  Sha256Hash  { get; init; } = "";
     public string? OldContent  { get; init; }
     public string? DiffText    { get; init; }

@@ -21,7 +21,7 @@ public class FileClassifier : IDisposable
     private ImmutableList<CompiledRule>      _rules   = ImmutableList<CompiledRule>.Empty;
     private ClassificationResult             _default = new("Unknown", "Unknown", "P3", "", "Unknown file", "Unclassified file change.");
     private FileSystemWatcher?               _configWatcher;
-    private Timer?                           _reloadDebounce;
+    private volatile Timer?                  _reloadDebounce;
     private readonly ILogger<FileClassifier> _logger;
 
     public FileClassifier(ILogger<FileClassifier> logger) => _logger = logger;
@@ -105,9 +105,10 @@ public class FileClassifier : IDisposable
         };
         _configWatcher.Changed += (_, _) =>
         {
-            // Debounce: JSON file may still be partially written
-            _reloadDebounce?.Dispose();
-            _reloadDebounce = new Timer(_ => LoadRules(configPath), null, 1000, Timeout.Infinite);
+            // Debounce: JSON file may still be partially written — swap atomically.
+            var old = Interlocked.Exchange(ref _reloadDebounce,
+                          new Timer(_ => LoadRules(configPath), null, 1000, Timeout.Infinite));
+            old?.Dispose();
         };
         _logger.LogInformation("FileClassifier: watching {P} for hot-reload.", configPath);
     }

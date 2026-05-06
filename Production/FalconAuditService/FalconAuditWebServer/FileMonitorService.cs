@@ -59,9 +59,6 @@ public class FileMonitorService : IDisposable
         _logger.LogInformation("FileMonitorService stopped.");
     }
 
-    // Keep synchronous Stop() for backward compat with Worker.cs StopAsync
-    public void Stop() => StopAsync().GetAwaiter().GetResult();
-
     private void InitWatcher()
     {
         _watcher?.Dispose();
@@ -89,13 +86,9 @@ public class FileMonitorService : IDisposable
 
     private void OnFileEvent(object _, FileSystemEventArgs e)
     {
-        // Skip events on directories (FSW also fires on directory creates)
-        // We only care about file events for our debounce path.
-        try
-        {
-            if (Directory.Exists(e.FullPath)) return;
-        }
-        catch { /* ignore — path may already be gone */ }
+        // Skip events on directories (FSW also fires on directory creates).
+        // Directory.Exists returns false for gone/missing paths; it does not throw.
+        if (Directory.Exists(e.FullPath)) return;
 
         _logger.LogDebug("FSW event received. Type={T} Path={P}", e.ChangeType, e.FullPath);
         // Always record the latest event so FireDebounce dispatches the most recent change type.
@@ -146,7 +139,12 @@ public class FileMonitorService : IDisposable
             {
                 Interlocked.Exchange(ref _recoveryScheduled, 0);
                 _logger.LogInformation("FSW overflow recovery: starting catch-up scan.");
-                _ = _catchUp.RunAllJobsParallelAsync(_ct);
+                _ = Task.Run(async () =>
+                {
+                    try { await _catchUp.RunAllJobsParallelAsync(_ct); }
+                    catch (OperationCanceledException) { }
+                    catch (Exception ex) { _logger.LogError(ex, "FSW overflow catch-up scan failed."); }
+                }, _ct);
             }, TaskScheduler.Default);
         }
     }
@@ -164,7 +162,12 @@ public class FileMonitorService : IDisposable
         {
             _logger.LogWarning(
                 "Audit event queue full — triggering CatchUpScanner. DroppedPath={P}", ev.FullPath);
-            _ = Task.Run(() => _catchUp.RunAllJobsParallelAsync(_ct));
+            _ = Task.Run(async () =>
+            {
+                try { await _catchUp.RunAllJobsParallelAsync(_ct); }
+                catch (OperationCanceledException) { }
+                catch (Exception ex) { _logger.LogError(ex, "Queue-full catch-up scan failed."); }
+            }, _ct);
         }
         catch (OperationCanceledException) { /* shutting down */ }
     }
@@ -185,7 +188,12 @@ public class FileMonitorService : IDisposable
     public void Dispose()
     {
         _watcher?.Dispose();
+        // Signal consumers to drain and exit (mirrors StopAsync).
+        _queue.Writer.TryComplete();
+        // Dispose timers after signalling writer complete so FireDebounce
+        // cannot enqueue to a completing writer after we clear the debounce map.
         foreach (var t in _debounce.Values) t.Dispose();
+        _debounce.Clear();
         _latestEvent.Clear();
     }
 }

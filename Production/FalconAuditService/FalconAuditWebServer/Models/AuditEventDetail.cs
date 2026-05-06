@@ -5,6 +5,7 @@ public record AuditEventDetail
     public long    Id              { get; init; }
     public string  ChangedAt       { get; init; } = "";
     public string  EventType       { get; init; } = "";
+    [System.Text.Json.Serialization.JsonIgnore]
     public string  Filepath        { get; init; } = "";
     public string  RelFilepath     { get; init; } = "";
     public string  Module          { get; init; } = "";
@@ -16,6 +17,7 @@ public record AuditEventDetail
     public string  ChangeSummary   { get; init; } = "";
     public string? OldContent      { get; init; }
     public string? DiffText        { get; init; }
+    [System.Text.Json.Serialization.JsonIgnore]
     public string? OldFilepath     { get; init; }
     public bool    IsBackfill      { get; init; }
 }

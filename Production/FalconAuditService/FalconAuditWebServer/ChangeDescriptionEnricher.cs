@@ -13,7 +13,7 @@ public class ChangeDescriptionEnricher : IDisposable
         ImmutableDictionary<string, ImmutableDictionary<string, string>>.Empty;
 
     private FileSystemWatcher?                    _watcher;
-    private Timer?                                _debounce;
+    private volatile Timer?                       _debounce;
     private readonly ILogger<ChangeDescriptionEnricher> _logger;
 
     private static readonly Regex _sectionRx  = new(@"^\s*\[([^\]]+)\]", RegexOptions.Compiled);
@@ -73,8 +73,9 @@ public class ChangeDescriptionEnricher : IDisposable
         };
         _watcher.Changed += (_, _) =>
         {
-            _debounce?.Dispose();
-            _debounce = new Timer(_ => Load(configPath), null, 1000, Timeout.Infinite);
+            var old = Interlocked.Exchange(ref _debounce,
+                          new Timer(_ => Load(configPath), null, 1000, Timeout.Infinite));
+            old?.Dispose();
         };
     }
 

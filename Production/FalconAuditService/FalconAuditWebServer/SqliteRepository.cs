@@ -9,6 +9,7 @@ public class SqliteRepository : IDisposable
     private readonly SqliteConnection _conn;
     private readonly SqliteConnection _readConn;
     private readonly SemaphoreSlim    _writeLock = new(1, 1);
+    private readonly SemaphoreSlim    _readLock  = new(1, 1);
     private volatile bool             _disposed;
     private readonly ILogger<SqliteRepository> _logger;
 
@@ -26,11 +27,11 @@ public class SqliteRepository : IDisposable
         _readConn.Open();
 
         using var rp = _readConn.CreateCommand();
-        rp.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=3000;";
+        rp.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=3000;";
         rp.ExecuteNonQuery();
 
         using var wp = _conn.CreateCommand();
-        wp.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=3000;";
+        wp.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=3000; PRAGMA wal_autocheckpoint=200;";
         wp.ExecuteNonQuery();
 
         using var check = _conn.CreateCommand();
@@ -159,6 +160,12 @@ public class SqliteRepository : IDisposable
         }
     }
 
+    /// <summary>
+    /// Applies ALTER TABLE ADD COLUMN for each definition in <paramref name="columnDefs"/>.
+    /// SECURITY: SQLite does not support parameter binding for DDL column definitions.
+    /// <paramref name="columnDefs"/> MUST contain only compile-time constant strings from
+    /// <see cref="MigrateSchema"/>. NEVER pass user input or configuration values here.
+    /// </summary>
     private void AlterTableAddColumns(string[] columnDefs)
     {
         foreach (var col in columnDefs)
@@ -190,9 +197,11 @@ public class SqliteRepository : IDisposable
     public async Task InsertAuditEventAsync(AuditLogEntry e, FileBaseline baseline)
     {
         if (_disposed) return;
-        await _writeLock.WaitAsync();
+        try { await _writeLock.WaitAsync(); }
+        catch (ObjectDisposedException) { return; }
         try
         {
+            if (_disposed) { _writeLock.Release(); return; }
             using var tx = _conn.BeginTransaction();
             using var ins = _conn.CreateCommand();
             ins.Transaction = tx;
@@ -241,6 +250,7 @@ public class SqliteRepository : IDisposable
 
             tx.Commit();
         }
+        catch (ObjectDisposedException) when (_disposed) { }
         finally { _writeLock.Release(); }
     }
 
@@ -248,10 +258,14 @@ public class SqliteRepository : IDisposable
     public async Task UpsertBaselineAsync(FileBaseline baseline)
     {
         if (_disposed) return;
-        await _writeLock.WaitAsync();
+        try { await _writeLock.WaitAsync(); }
+        catch (ObjectDisposedException) { return; }
         try
         {
+            if (_disposed) { _writeLock.Release(); return; }
+            using var tx  = _conn.BeginTransaction();
             using var cmd = _conn.CreateCommand();
+            cmd.Transaction = tx;
             cmd.CommandText = @"
                 INSERT INTO file_baselines (filepath, last_hash, last_seen, last_content)
                 VALUES (@fp, @lh, @ls, @lc)
@@ -264,7 +278,9 @@ public class SqliteRepository : IDisposable
             cmd.Parameters.AddWithValue("@ls", baseline.LastSeen);
             cmd.Parameters.AddWithValue("@lc", (object?)baseline.LastContent ?? DBNull.Value);
             await cmd.ExecuteNonQueryAsync();
+            tx.Commit();
         }
+        catch (ObjectDisposedException) when (_disposed) { }
         finally { _writeLock.Release(); }
     }
 
@@ -272,6 +288,9 @@ public class SqliteRepository : IDisposable
 
     public async Task<FileBaseline?> GetBaselineAsync(string filepath)
     {
+        if (_disposed) return null;
+        try { await _readLock.WaitAsync(); }
+        catch (ObjectDisposedException) { return null; }
         try
         {
             using var cmd = _readConn.CreateCommand();
@@ -290,10 +309,14 @@ public class SqliteRepository : IDisposable
             };
         }
         catch (Exception) when (_disposed) { return null; }
+        finally { _readLock.Release(); }
     }
 
     public async Task<List<FileBaseline>> GetAllBaselinesAsync()
     {
+        if (_disposed) return new();
+        try { await _readLock.WaitAsync(); }
+        catch (ObjectDisposedException) { return new(); }
         try
         {
             var list = new List<FileBaseline>();
@@ -313,19 +336,23 @@ public class SqliteRepository : IDisposable
             return list;
         }
         catch (Exception) when (_disposed) { return new(); }
+        finally { _readLock.Release(); }
     }
 
     public async Task DeleteBaselineAsync(string filepath)
     {
         if (_disposed) return;
-        await _writeLock.WaitAsync();
+        try { await _writeLock.WaitAsync(); }
+        catch (ObjectDisposedException) { return; }
         try
         {
+            if (_disposed) { _writeLock.Release(); return; }
             using var cmd = _conn.CreateCommand();
             cmd.CommandText = "DELETE FROM file_baselines WHERE filepath=@fp";
             cmd.Parameters.AddWithValue("@fp", filepath);
             await cmd.ExecuteNonQueryAsync();
         }
+        catch (ObjectDisposedException) when (_disposed) { }
         finally { _writeLock.Release(); }
     }
 
@@ -334,20 +361,26 @@ public class SqliteRepository : IDisposable
     public async Task SetConfigValueAsync(string key, string value)
     {
         if (_disposed) return;
-        await _writeLock.WaitAsync();
+        try { await _writeLock.WaitAsync(); }
+        catch (ObjectDisposedException) { return; }
         try
         {
+            if (_disposed) { _writeLock.Release(); return; }
             using var cmd = _conn.CreateCommand();
             cmd.CommandText = "INSERT OR REPLACE INTO monitor_config (key, value) VALUES (@k, @v)";
             cmd.Parameters.AddWithValue("@k", key);
             cmd.Parameters.AddWithValue("@v", value);
             await cmd.ExecuteNonQueryAsync();
         }
+        catch (ObjectDisposedException) when (_disposed) { }
         finally { _writeLock.Release(); }
     }
 
     public string? GetConfigValue(string key)
     {
+        if (_disposed) return null;
+        try { _readLock.Wait(); }
+        catch (ObjectDisposedException) { return null; }
         try
         {
             using var cmd = _readConn.CreateCommand();
@@ -356,6 +389,7 @@ public class SqliteRepository : IDisposable
             return cmd.ExecuteScalar()?.ToString();
         }
         catch (Exception) when (_disposed) { return null; }
+        finally { _readLock.Release(); }
     }
 
     public bool IsInitialScanDone()
@@ -367,8 +401,12 @@ public class SqliteRepository : IDisposable
     public void Dispose()
     {
         _disposed = true;
-        _writeLock.Dispose();
+        // Drain the semaphore so any in-progress write can finish before we close connections.
+        try { _writeLock.Wait(TimeSpan.FromSeconds(5)); } catch { }
         _conn.Dispose();
         _readConn.Dispose();
+        try { _writeLock.Release(); } catch { }
+        _writeLock.Dispose();
+        _readLock.Dispose();
     }
 }

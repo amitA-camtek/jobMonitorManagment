@@ -20,7 +20,7 @@ public class JobManifest
     public string? Origin { get; set; }   // "NewLocal" | "CopiedFromRemote" | "Unknown"
 
     [JsonPropertyName("originDeterminedAt")]
-    public DateTime? OriginDeterminedAt { get; set; }
+    public DateTimeOffset? OriginDeterminedAt { get; set; }
 }
 
 public class MachineTimestamp
@@ -29,7 +29,7 @@ public class MachineTimestamp
     public string Machine { get; set; } = "";
 
     [JsonPropertyName("at")]
-    public DateTime At { get; set; }
+    public DateTimeOffset At { get; set; }
 }
 
 public class HistoryEntry
@@ -38,10 +38,10 @@ public class HistoryEntry
     public string Machine { get; set; } = "";
 
     [JsonPropertyName("from")]
-    public DateTime From { get; set; }
+    public DateTimeOffset From { get; set; }
 
     [JsonPropertyName("to")]
-    public DateTime? To { get; set; }
+    public DateTimeOffset? To { get; set; }
 
     [JsonPropertyName("events")]
     public int Events { get; set; }

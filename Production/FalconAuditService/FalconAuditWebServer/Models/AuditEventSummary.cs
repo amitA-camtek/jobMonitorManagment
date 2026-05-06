@@ -5,12 +5,14 @@ public record AuditEventSummary
     public long   Id              { get; init; }
     public string ChangedAt       { get; init; } = "";
     public string EventType       { get; init; } = "";
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Filepath        { get; init; } = "";
     public string RelFilepath     { get; init; } = "";
     public string Module          { get; init; } = "";
     public string OwnerService    { get; init; } = "";
     public string MonitorPriority { get; init; } = "";
     public string MachineName     { get; init; } = "";
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Sha256Hash      { get; init; } = "";
     public string FileDescription { get; init; } = "";
     public string  ChangeSummary   { get; init; } = "";

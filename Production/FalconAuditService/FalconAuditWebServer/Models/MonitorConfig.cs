@@ -5,6 +5,7 @@ public class MonitorConfig
     public string WatchPath                  { get; set; } = @"C:\job\";
     public string ClassificationRulesPath    { get; set; } = @"C:\bis\data\Apps\FileClassificationRules.json";
     public string ParameterDescriptionsPath  { get; set; } = @"C:\bis\data\Apps\ParameterDescriptions.json";
+    public string LoginFilePath              { get; set; } = @"C:\bis\data\lastLogin.json";
     public int    ApiPort                    { get; set; } = 5100;
     public string ApiBindAddress             { get; set; } = "127.0.0.1";
     public int    DebounceMs                 { get; set; } = 500;

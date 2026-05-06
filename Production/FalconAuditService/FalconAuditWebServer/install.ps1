@@ -31,6 +31,14 @@ if ($Action -eq 'Install') {
         Write-Host "Created directory: $DbDir"
     }
 
+    # Create the log directory referenced by the Serilog File sink in appsettings.json.
+    $LogDir = 'C:\bis\ErrorLog\AuditLog'
+    if (-not (Test-Path $LogDir)) {
+        New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+        Write-Host "Created log directory: $LogDir"
+    }
+    icacls $LogDir /grant "NT SERVICE\FalconAuditSvc:(OI)(CI)M" /T | Out-Null
+
     # Copy FileClassificationRules.json and ParameterDescriptions.json on first install
     $rulesSource = Join-Path $InstallPath 'FileClassificationRules.json'
     $rulesDest   = Join-Path $DbDir 'FileClassificationRules.json'
@@ -50,10 +58,17 @@ if ($Action -eq 'Install') {
     icacls "C:\bis\auditlog"  /grant "NT SERVICE\FalconAuditSvc:(OI)(CI)M" /T | Out-Null
     Write-Host "ACLs set for NT SERVICE\FalconAuditSvc."
 
+    # Register the Windows EventLog source so Serilog EventLog sink can write Warning/Error entries.
+    if (-not [System.Diagnostics.EventLog]::SourceExists('FalconAuditService')) {
+        New-EventLog -LogName 'Application' -Source 'FalconAuditService'
+        Write-Host "EventLog source 'FalconAuditService' registered."
+    }
+
     sc.exe create $ServiceName `
-        binPath= "`"$ExePath`"" `
-        start=   auto `
-        obj=     "NT SERVICE\FalconAuditSvc"
+        binPath=      "`"$ExePath`"" `
+        DisplayName=  "$DisplayName" `
+        start=        auto `
+        obj=          "NT SERVICE\FalconAuditSvc"
 
     sc.exe description $ServiceName $Description
     sc.exe failure      $ServiceName reset= 86400 actions= restart/5000/restart/10000/restart/30000

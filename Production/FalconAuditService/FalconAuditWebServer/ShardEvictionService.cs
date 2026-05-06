@@ -12,9 +12,15 @@ using Microsoft.Extensions.Logging;
 /// handles that previously kept `.audit\audit.db` locked are released within the
 /// grace window.
 /// </summary>
-public class ShardEvictionService
+public class ShardEvictionService : IDisposable
 {
     private static readonly TimeSpan GracePeriod = TimeSpan.FromSeconds(2);
+
+    // Falcon.Net leaves these job-level files behind when its non-recursive
+    // JobSerializer.Delete fails. Treat them as ignorable when deciding whether
+    // a job folder is effectively empty, and sweep them during eviction.
+    private static readonly HashSet<string> IgnoredOrphanFiles =
+        new(StringComparer.OrdinalIgnoreCase) { "MetaData.ini" };
 
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _pending =
         new(StringComparer.OrdinalIgnoreCase);
@@ -41,21 +47,25 @@ public class ShardEvictionService
     /// <summary>Called from FileChangeHandler after a Deleted event when the job folder is now empty.</summary>
     public void Schedule(string jobName, string jobPath)
     {
-        // Debounce: replace any pending eviction for this job with a fresh one.
-        if (_pending.TryRemove(jobName, out var prior))
+        var newCts = new CancellationTokenSource();
+        // AddOrUpdate atomically cancels any existing entry and registers the new one.
+        // We only Cancel — the in-flight EvictAfterGraceAsync owns the CTS lifecycle
+        // and disposes it in its own finally block. Disposing here would race with
+        // the in-flight `await Task.Delay(GracePeriod, cts.Token)` and surface as
+        // ObjectDisposedException.
+        var registered = _pending.AddOrUpdate(jobName, newCts, (_, old) =>
         {
-            prior.Cancel();
-            prior.Dispose();
-        }
+            old.Cancel();
+            return newCts;
+        });
 
-        var cts = new CancellationTokenSource();
-        if (!_pending.TryAdd(jobName, cts))
+        if (!ReferenceEquals(registered, newCts))
         {
-            cts.Dispose();
+            newCts.Dispose();
             return;
         }
 
-        _ = Task.Run(() => EvictAfterGraceAsync(jobName, jobPath, cts));
+        _ = Task.Run(() => EvictAfterGraceAsync(jobName, jobPath, newCts));
         _logger.LogDebug("ShardEvictionService: scheduled eviction for '{J}' in {S}s.", jobName, GracePeriod.TotalSeconds);
     }
 
@@ -65,7 +75,8 @@ public class ShardEvictionService
         if (_pending.TryRemove(jobName, out var cts))
         {
             cts.Cancel();
-            cts.Dispose();
+            // Don't Dispose here — the in-flight EvictAfterGraceAsync's finally block
+            // owns disposal. See the comment in Schedule().
             _logger.LogDebug("ShardEvictionService: pending eviction cancelled for '{J}'.", jobName);
         }
     }
@@ -83,7 +94,7 @@ public class ShardEvictionService
             }
 
             _origin.CancelCheck(jobName);
-            _manifest.RecordDeparture(jobPath);
+            await _manifest.RecordDepartureAsync(jobPath);
             _shards.Remove(jobName);
             _queryRepo.CloseShard(Path.Combine(jobPath, ".audit", "audit.db"));
 
@@ -109,7 +120,7 @@ public class ShardEvictionService
         }
     }
 
-    /// <summary>True if the job folder is gone, or contains nothing but `.audit\`.</summary>
+    /// <summary>True if the job folder is gone, or contains nothing but `.audit\` and ignorable orphan files.</summary>
     public static bool IsJobFolderEffectivelyEmpty(string jobPath)
     {
         try
@@ -117,8 +128,10 @@ public class ShardEvictionService
             if (!Directory.Exists(jobPath)) return true;
             foreach (var entry in Directory.EnumerateFileSystemEntries(jobPath))
             {
-                if (!string.Equals(Path.GetFileName(entry), ".audit", StringComparison.OrdinalIgnoreCase))
-                    return false;
+                var name = Path.GetFileName(entry);
+                if (string.Equals(name, ".audit", StringComparison.OrdinalIgnoreCase)) continue;
+                if (IgnoredOrphanFiles.Contains(name)) continue;
+                return false;
             }
             return true;
         }
@@ -150,6 +163,23 @@ public class ShardEvictionService
         try
         {
             if (!Directory.Exists(jobPath)) return;
+
+            // Sweep known leftover files (e.g. MetaData.ini that Falcon.Net's
+            // non-recursive JobSerializer.Delete leaves behind) so the parent
+            // folder is truly empty and can be removed.
+            foreach (var entry in Directory.EnumerateFiles(jobPath))
+            {
+                var name = Path.GetFileName(entry);
+                if (!IgnoredOrphanFiles.Contains(name)) continue;
+                try { File.Delete(entry); }
+                catch (Exception swept)
+                {
+                    _logger.LogDebug(swept,
+                        "ShardEvictionService: could not remove orphan file '{F}' for '{J}'.",
+                        entry, jobName);
+                }
+            }
+
             if (Directory.EnumerateFileSystemEntries(jobPath).Any()) return;
             Directory.Delete(jobPath, recursive: false);
             _logger.LogInformation("ShardEvictionService: removed empty job folder for '{J}'.", jobName);
@@ -169,5 +199,12 @@ public class ShardEvictionService
                 File.SetAttributes(dir, attrs & ~FileAttributes.Hidden);
         }
         catch { }
+    }
+
+    public void Dispose()
+    {
+        // Only Cancel — each in-flight EvictAfterGraceAsync disposes its own CTS in finally.
+        foreach (var cts in _pending.Values) cts.Cancel();
+        _pending.Clear();
     }
 }

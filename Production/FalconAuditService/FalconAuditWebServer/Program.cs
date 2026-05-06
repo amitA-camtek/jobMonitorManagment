@@ -12,7 +12,7 @@ using Serilog;
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(new ConfigurationBuilder()
         .SetBasePath(AppContext.BaseDirectory)
-        .AddJsonFile("appsettings.json", optional: true)
+        .AddJsonFile("appsettings.json", optional: false)
         .Build())
     .CreateLogger();
 
@@ -32,12 +32,14 @@ try
     {
         var section = builder.Configuration.GetSection("AuditService");
         var cfg     = new MonitorConfig();
-        var watch   = section["WatchPath"];
-        var rules   = section["ClassificationRulesPath"];
-        var param   = section["ParameterDescriptionsPath"];
-        if (!string.IsNullOrEmpty(watch))  cfg.WatchPath                 = watch;
-        if (!string.IsNullOrEmpty(rules))  cfg.ClassificationRulesPath   = rules;
-        if (!string.IsNullOrEmpty(param))  cfg.ParameterDescriptionsPath = param;
+        cfg.WatchPath = section["WatchPath"]
+            ?? throw new InvalidOperationException("AuditService:WatchPath is required in appsettings.json.");
+        cfg.ClassificationRulesPath = section["ClassificationRulesPath"]
+            ?? throw new InvalidOperationException("AuditService:ClassificationRulesPath is required in appsettings.json.");
+        cfg.ParameterDescriptionsPath = section["ParameterDescriptionsPath"]
+            ?? throw new InvalidOperationException("AuditService:ParameterDescriptionsPath is required in appsettings.json.");
+        var login = section["LoginFilePath"];
+        if (!string.IsNullOrEmpty(login)) cfg.LoginFilePath = login;
         return cfg;
     });
 
@@ -72,14 +74,16 @@ try
         var originChecker = sp.GetRequiredService<JobOriginChecker>();
         var logger        = sp.GetRequiredService<ILogger<DirectoryWatcher>>();
         return new DirectoryWatcher(config.WatchPath,
-            onArrived: (jobName, jobPath) =>
+            onArrived: async (jobName, jobPath) =>
             {
                 var repo = shards.GetOrCreate(jobName, jobPath);
-                manifest.RecordArrival(jobPath, config.MachineName);
+                await manifest.RecordArrivalAsync(jobPath, config.MachineName);
                 originChecker.ScheduleCheck(jobName, jobPath);
                 // After the settle window, close the "JobInit" era so that all
                 // subsequent FSW events from FileChangeHandler are classified "Runtime".
                 if (repo is not null)
+                {
+                    var capturedJobName = jobName;
                     _ = Task.Run(async () =>
                     {
                         try
@@ -88,13 +92,21 @@ try
                             if (!repo.IsInitialScanDone())
                                 await repo.SetInitialScanDoneAsync();
                         }
-                        catch (Exception) { }
+                        catch (OperationCanceledException) { /* service stopping — expected */ }
+                        catch (Exception ex)
+                        {
+                            Log.Warning(ex,
+                                "Settle-window SetInitialScanDone failed for job '{J}'. " +
+                                "FileEra will remain 'JobInit' until next scan.",
+                                capturedJobName);
+                        }
                     });
+                }
             },
-            onDeparted: (jobName) =>
+            onDeparted: async (jobName) =>
             {
                 originChecker.CancelCheck(jobName);
-                manifest.RecordDeparture(Path.Combine(config.WatchPath, jobName));
+                await manifest.RecordDepartureAsync(Path.Combine(config.WatchPath, jobName));
                 shards.Remove(jobName);
             },
             logger);
@@ -122,8 +134,11 @@ try
 
     var app = builder.Build();
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
 
     app.UseAuthentication();
     app.UseAuthorization();

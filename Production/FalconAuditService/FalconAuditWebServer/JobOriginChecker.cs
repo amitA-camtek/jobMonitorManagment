@@ -41,20 +41,39 @@ public class JobOriginChecker : IDisposable
     /// </summary>
     public void ScheduleCheck(string jobName, string jobPath)
     {
-        if (_pending.TryRemove(jobName, out var old)) old.Cancel();
+        var newCts = new CancellationTokenSource();
+        // Cancel-only on replace; the in-flight Task.Run owns the CTS lifecycle and
+        // disposes it in finally. Disposing here would race with `await Task.Delay(..., token)`
+        // and surface as ObjectDisposedException.
+        var registered = _pending.AddOrUpdate(jobName, newCts, (_, old) =>
+        {
+            old.Cancel();
+            return newCts;
+        });
 
-        var cts = new CancellationTokenSource();
-        _pending[jobName] = cts;
+        if (!ReferenceEquals(registered, newCts))
+        {
+            newCts.Dispose();
+            return;
+        }
 
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(_config.JobSettleTimeSeconds), cts.Token);
+                await Task.Delay(TimeSpan.FromSeconds(_config.JobSettleTimeSeconds), newCts.Token);
                 _pending.TryRemove(jobName, out _);
                 await DetermineAndRecordAsync(jobName, jobPath, isRetry: false);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) { /* job departed or rescheduled */ }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "JobOriginChecker: origin check failed for '{J}'.", jobName);
+            }
+            finally
+            {
+                newCts.Dispose();
+            }
         });
     }
 
@@ -64,6 +83,7 @@ public class JobOriginChecker : IDisposable
     /// </summary>
     public void CancelCheck(string jobName)
     {
+        // Cancel-only; the in-flight Task.Run's finally block disposes the CTS.
         if (_pending.TryRemove(jobName, out var cts)) cts.Cancel();
     }
 
@@ -87,18 +107,31 @@ public class JobOriginChecker : IDisposable
                     "JobOriginChecker: '{J}' inconclusive (too few P1 files) — rescheduling once.",
                     jobName);
 
-                if (_pending.TryRemove(jobName, out var old)) old.Cancel();
-                var cts = new CancellationTokenSource();
-                _pending[jobName] = cts;
+                var retryCts = new CancellationTokenSource();
+                var retryRegistered = _pending.AddOrUpdate(jobName, retryCts, (_, old) =>
+                {
+                    old.Cancel();
+                    return retryCts;
+                });
+                if (!ReferenceEquals(retryRegistered, retryCts)) { retryCts.Dispose(); return; }
+
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(_config.JobSettleTimeSeconds), cts.Token);
+                        await Task.Delay(TimeSpan.FromSeconds(_config.JobSettleTimeSeconds), retryCts.Token);
                         _pending.TryRemove(jobName, out _);
                         await DetermineAndRecordAsync(jobName, jobPath, isRetry: true);
                     }
                     catch (OperationCanceledException) { }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "JobOriginChecker: retry origin check failed for '{J}'.", jobName);
+                    }
+                    finally
+                    {
+                        retryCts.Dispose();
+                    }
                 });
                 return;
             }
@@ -126,7 +159,7 @@ public class JobOriginChecker : IDisposable
         var manifest = _manifest.ReadManifest(jobPath);
         if (manifest?.Created is not null)
         {
-            var age = DateTime.UtcNow - manifest.Created.At;
+            var age = DateTimeOffset.UtcNow - manifest.Created.At;
             if (age > TimeSpan.FromSeconds(_config.JobSettleTimeSeconds + 60))
             {
                 // Manifest is from a previous session — its history is authoritative
@@ -200,6 +233,7 @@ public class JobOriginChecker : IDisposable
 
     public void Dispose()
     {
+        // Only Cancel — each in-flight Task.Run disposes its own CTS in finally.
         foreach (var cts in _pending.Values) cts.Cancel();
         _pending.Clear();
     }

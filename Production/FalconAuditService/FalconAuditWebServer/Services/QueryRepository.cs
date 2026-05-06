@@ -18,18 +18,22 @@ public class QueryRepository : IDisposable
     /// <summary>Close and drop the cached read connection for a shard whose .audit\ directory is being deleted.</summary>
     public void CloseShard(string dbPath)
     {
-        if (_connections.TryRemove(dbPath, out var conn))
+        lock (_connLock)
         {
-            try { conn.Dispose(); } catch { }
+            if (_connections.TryRemove(dbPath, out var conn))
+            {
+                try { conn.Dispose(); } catch { }
+            }
         }
     }
 
     private SqliteConnection? GetConnection(string dbPath)
     {
-        if (_connections.TryGetValue(dbPath, out var existing)) return existing;
+        // Always go through _connLock so CloseShard cannot dispose a connection
+        // between TryGetValue returning it and the caller acquiring lock(conn).
         lock (_connLock)
         {
-            if (_connections.TryGetValue(dbPath, out existing)) return existing;
+            if (_connections.TryGetValue(dbPath, out var existing)) return existing;
             try
             {
                 var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
@@ -59,13 +63,28 @@ public class QueryRepository : IDisposable
             {
                 var conn = GetConnection(shardPath);
                 if (conn is null) continue;
-                lock (conn)
+                try
                 {
-                    using var cmd = conn.CreateCommand();
-                    cmd.CommandText = "SELECT COUNT(*), MIN(changed_at), MAX(changed_at), GROUP_CONCAT(DISTINCT machine_name) FROM audit_log";
-                    using var r = cmd.ExecuteReader();
-                    if (r.Read())
+                    lock (conn)
                     {
+                        long    count    = 0;
+                        string  first    = "";
+                        string  last     = "";
+                        string  machines = "";
+
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.CommandText = "SELECT COUNT(*), MIN(changed_at), MAX(changed_at), GROUP_CONCAT(DISTINCT machine_name) FROM audit_log";
+                            using var r = cmd.ExecuteReader();
+                            if (r.Read())
+                            {
+                                count    = r.IsDBNull(0) ? 0  : r.GetInt64(0);
+                                first    = r.IsDBNull(1) ? "" : r.GetString(1);
+                                last     = r.IsDBNull(2) ? "" : r.GetString(2);
+                                machines = r.IsDBNull(3) ? "" : r.GetString(3);
+                            }
+                        }
+
                         string? origin = null;
                         string? jobCreatedAt = null;
                         try
@@ -83,22 +102,24 @@ public class QueryRepository : IDisposable
                                 if (key == "created_at_utc") jobCreatedAt = val;
                             }
                         }
-                        catch { /* tables may not exist on very old shards */ }
+                        catch (SqliteException) { /* tables may not exist on very old shards */ }
 
                         result.Add(new JobSummary
                         {
                             JobName        = job,
                             ShardPath      = shardPath,
-                            TotalEvents    = r.IsDBNull(0) ? 0 : r.GetInt64(0),
-                            FirstEvent     = r.IsDBNull(1) ? "" : r.GetString(1),
-                            LastEvent      = r.IsDBNull(2) ? "" : r.GetString(2),
-                            Machines       = r.IsDBNull(3) ? "" : r.GetString(3),
+                            TotalEvents    = count,
+                            FirstEvent     = first,
+                            LastEvent      = last,
+                            Machines       = machines,
                             ShardSizeBytes = new FileInfo(shardPath).Length,
                             Origin         = origin,
                             JobCreatedAt   = jobCreatedAt
                         });
                     }
                 }
+                catch (ObjectDisposedException) { /* shard evicted — skip */ }
+                catch (SqliteException ex) when (ex.Message.Contains("closed")) { /* same */ }
             }
             catch (Exception ex) { _logger.LogWarning(ex, "QueryRepository: stats failed for {J}", job); }
         }
@@ -194,31 +215,40 @@ public class QueryRepository : IDisposable
         }
     }
 
-    public List<FileHistoryItem> GetFileHistory(string jobName, string relFilepath)
+    public List<FileHistoryItem> GetFileHistory(string jobName, string relFilepath,
+        int limit = 500, int offset = 0)
     {
         var shardPath = _discovery.ShardPath(jobName);
         if (shardPath is null) return new();
         var conn = GetConnection(shardPath);
         if (conn is null) return new();
         var result = new List<FileHistoryItem>();
-        lock (conn)
+        try
         {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"SELECT id,changed_at,event_type,machine_name,sha256_hash,
-                old_content,diff_text,is_backfill
-                FROM audit_log WHERE rel_filepath=@p ORDER BY changed_at ASC";
-            cmd.Parameters.AddWithValue("@p", relFilepath);
-            using var r = cmd.ExecuteReader();
-            while (r.Read())
-                result.Add(new FileHistoryItem
-                {
-                    Id=r.GetInt64(0), ChangedAt=r.GetString(1), EventType=r.GetString(2),
-                    MachineName=r.GetString(3), Sha256Hash=r.GetString(4),
-                    OldContent=r.IsDBNull(5)?null:r.GetString(5),
-                    DiffText=r.IsDBNull(6)?null:r.GetString(6),
-                    IsBackfill=!r.IsDBNull(7) && r.GetInt32(7)==1
-                });
+            lock (conn)
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"SELECT id,changed_at,event_type,machine_name,sha256_hash,
+                    old_content,diff_text,is_backfill
+                    FROM audit_log WHERE rel_filepath=@p ORDER BY changed_at ASC
+                    LIMIT @limit OFFSET @offset";
+                cmd.Parameters.AddWithValue("@p",      relFilepath);
+                cmd.Parameters.AddWithValue("@limit",  limit);
+                cmd.Parameters.AddWithValue("@offset", offset);
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                    result.Add(new FileHistoryItem
+                    {
+                        Id=r.GetInt64(0), ChangedAt=r.GetString(1), EventType=r.GetString(2),
+                        MachineName=r.GetString(3), Sha256Hash=r.GetString(4),
+                        OldContent=r.IsDBNull(5)?null:r.GetString(5),
+                        DiffText=r.IsDBNull(6)?null:r.GetString(6),
+                        IsBackfill=!r.IsDBNull(7) && r.GetInt32(7)==1
+                    });
+            }
         }
+        catch (ObjectDisposedException) { return new(); }
+        catch (SqliteException ex) when (ex.Message.Contains("closed")) { return new(); }
         return result;
     }
 
@@ -247,7 +277,7 @@ public class QueryRepository : IDisposable
         if (f.Machine        is not null) clauses.Add("machine_name      = @machine");
         if (f.From           is not null) clauses.Add("changed_at       >= @from");
         if (f.To             is not null) clauses.Add("changed_at       <= @to");
-        if (f.Path           is not null) clauses.Add("instr(filepath, @path) > 0");
+        if (f.Path           is not null) clauses.Add("filepath LIKE @path || '%'");
         if (f.FileEra        is not null) clauses.Add("file_era = @fileEra");
         // ExcludeCreated is ignored when the caller is already filtering by a specific event type
         if (f.ExcludeCreated && f.EventType is null)
