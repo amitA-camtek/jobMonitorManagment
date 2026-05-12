@@ -147,12 +147,10 @@ try
     builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNegotiate();
     builder.Services.AddAuthorization(o =>
     {
-        // No FallbackPolicy: endpoints are anonymous unless they explicitly call
-        // .RequireAuthorization(...). The previous fallback (RequireAuthenticatedUser)
-        // forced a Negotiate handshake on every request including the synchronous DELETE
-        // that Falcon's UI thread blocks on — adding ~600ms per delete and corrupting
-        // Falcon's post-delete state. Endpoints that hold sensitive data must opt in via
-        // .RequireAuthorization("AuditorOnly") (see EventsEndpoints).
+        // Read endpoints require Negotiate auth. The synchronous DELETE on
+        // /api/jobs/{name} opts out via .AllowAnonymous() (see JobsEndpoints) so
+        // Falcon's UI thread doesn't pay a Negotiate handshake on every delete.
+        o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
         o.AddPolicy("AuditorOnly", p => p.RequireRole("Auditor"));
     });
 

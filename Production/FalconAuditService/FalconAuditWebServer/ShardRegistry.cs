@@ -19,6 +19,18 @@ public class ShardRegistry : IAsyncDisposable
 {
     private readonly ConcurrentDictionary<string, AuditEventQueue> _queues =
         new(StringComparer.OrdinalIgnoreCase);
+
+    // Resurrection guard: jobs whose queue was discarded recently. During
+    // Falcon's recursive Directory.Delete, the parent job folder still
+    // exists while files inside are being deleted. An FSW event on a user
+    // file would otherwise hit GetOrCreate, pass the Directory.Exists check,
+    // and resurrect a shard for a job that's going away — recreating
+    // .audit\audit.db just in time for Falcon's next walk step to fail.
+    // Refuse GetOrCreate for jobs that departed within the guard window.
+    private readonly ConcurrentDictionary<string, DateTime> _recentlyDeparted =
+        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly TimeSpan _resurrectionGuardWindow = TimeSpan.FromSeconds(10);
+
     private readonly ManifestManager _manifest;
     private readonly MonitorConfig   _config;
     private readonly ILoggerFactory  _loggerFactory;
@@ -48,6 +60,24 @@ public class ShardRegistry : IAsyncDisposable
         {
             _logger.LogDebug("ShardRegistry: skipping GetOrCreate for '{J}' — parent folder gone.", jobName);
             return null;
+        }
+
+        // Don't resurrect a shard for a job that was just departed. Falcon's
+        // recursive Directory.Delete keeps the parent folder around while it
+        // deletes children; FSW events on those children would otherwise pass
+        // the Directory.Exists check above. Opportunistic prune of stale
+        // entries — keep the dictionary small.
+        var now = DateTime.UtcNow;
+        if (_recentlyDeparted.TryGetValue(jobName, out var departedAt) &&
+            now - departedAt < _resurrectionGuardWindow)
+        {
+            _logger.LogDebug("ShardRegistry: refusing GetOrCreate for '{J}' — recently departed.", jobName);
+            return null;
+        }
+        foreach (var kv in _recentlyDeparted)
+        {
+            if (now - kv.Value > TimeSpan.FromMinutes(5))
+                _recentlyDeparted.TryRemove(kv.Key, out _);
         }
 
         var auditDir = Path.Combine(jobPath, ".audit");
@@ -110,7 +140,16 @@ public class ShardRegistry : IAsyncDisposable
         {
             queue.Discard();
             await queue.DisposeAsync();
+            // Record departure timestamp so GetOrCreate refuses to resurrect this
+            // shard during Falcon's in-flight recursive delete.
+            _recentlyDeparted[jobName] = DateTime.UtcNow;
             _logger.LogInformation("ShardRegistry: discarded queue for departed job '{J}'.", jobName);
+        }
+        else
+        {
+            // No queue but still record the departure — DirectoryWatcher may invoke
+            // eviction for a folder we never opened a queue for (e.g. transient).
+            _recentlyDeparted[jobName] = DateTime.UtcNow;
         }
     }
 

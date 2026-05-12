@@ -3,6 +3,7 @@ namespace FalconAuditService;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using FalconAuditService.Models;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
 public class FileMonitorService : IDisposable
@@ -179,6 +180,15 @@ public class FileMonitorService : IDisposable
             await foreach (var ev in _queue.Reader.ReadAllAsync(_ct))
             {
                 try { await _handler.HandleAsync(ev); }
+                catch (SqliteException sx) when (sx.SqliteErrorCode == 14)
+                {
+                    // SQLITE_CANTOPEN: audit.db is gone. Falcon's recursive
+                    // Directory.Delete removed the .audit\ folder before this
+                    // FSW event for a sibling user file finished processing.
+                    // Expected during job deletes; drop the event silently.
+                    _logger.LogDebug(
+                        "Skipping event for departing job (audit.db gone). Path={P}", ev.FullPath);
+                }
                 catch (Exception ex) { _logger.LogError(ex, "Error processing event. Path={P}", ev.FullPath); }
             }
         }

@@ -26,23 +26,13 @@ public static class JobsEndpoints
             catch { return Results.StatusCode(500); }
         });
 
-        // Falcon.Net's FalconAuditClient.TryDeleteJob calls this synchronously BEFORE
-        // Directory.Delete so the service can close write+read SQLite connections and
-        // remove .audit\ first — letting Falcon's recursive delete succeed first try
-        // with no IOException. AllowAnonymous because Falcon's UI thread blocks on
-        // this call: a Negotiate challenge handshake here would add ~600ms per delete
-        // and desynchronizes Falcon's post-delete state, leaving the next "Open Job"
-        // unable to load (zones loaded from stale path → empty UI). The service binds
-        // to 127.0.0.1 only (see Kestrel config), so this is local-only access.
-        api.MapDelete("/jobs/{jobName}", async (string jobName, JobDiscoveryService discovery, ShardEvictionService eviction) =>
-        {
-            if (string.IsNullOrWhiteSpace(jobName) ||
-                jobName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-                return Results.BadRequest("Invalid job name.");
-
-            var jobPath = Path.Combine(discovery.WatchPath, jobName);
-            await eviction.EvictNowAsync(jobName, jobPath, "API delete");
-            return Results.Ok();
-        }).AllowAnonymous();
+        // Note: there used to be a MapDelete("/jobs/{jobName}") here that Falcon
+        // called synchronously before its own recursive Directory.Delete. It was
+        // there to close audit.db handles before the walk so the delete wouldn't
+        // hit IOException. Under the lazy-connection model (no long-lived SQLite
+        // handles, Pooling=False) the call provided no benefit. Eviction now runs
+        // entirely from DirectoryWatcher onDeparted; the resurrection guard in
+        // ShardRegistry.GetOrCreate prevents a fresh shard from being opened
+        // during Falcon's in-flight recursive delete.
     }
 }

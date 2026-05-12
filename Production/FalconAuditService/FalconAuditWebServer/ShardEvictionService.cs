@@ -63,13 +63,10 @@ public class ShardEvictionService
             // .audit\ folder behind.
             await _shards.DiscardOnDepartureAsync(jobName);
 
-            // Best-effort manifest departure. If .audit\ is already gone, the
-            // ManifestManager logs a debug and returns.
-            try { await _manifest.RecordDepartureAsync(jobPath); }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "ShardEvictionService: manifest departure no-op for '{J}'.", jobName);
-            }
+            // Note: we used to call _manifest.RecordDepartureAsync(jobPath) here, but
+            // the very next step deletes .audit\ wholesale — so the departure record
+            // was written and immediately destroyed. No code path reads departed-job
+            // manifest data, so the write was orphaned. Skip it.
 
             TryDeleteAuditFolder(jobName, jobPath);
             TryDeleteJobFolderIfEmpty(jobName, jobPath);
