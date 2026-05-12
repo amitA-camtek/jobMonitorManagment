@@ -67,8 +67,8 @@ public class CatchUpScanner : IDisposable
     /// </summary>
     public async Task RunJobAsync(string jobName, string jobPath, CancellationToken ct)
     {
-        var repo = _shards.GetOrCreate(jobName, jobPath);
-        if (repo is null)
+        var queue = _shards.GetOrCreate(jobName, jobPath);
+        if (queue is null)
         {
             _logger.LogWarning("CatchUpScanner: skipping {Job} — shard could not be opened.", jobName);
             return;
@@ -115,8 +115,8 @@ public class CatchUpScanner : IDisposable
             var jobName  = relative[..sep];
             if (jobInitFlags.TryGetValue(jobName, out var cached)) return cached ? "JobInit" : "Runtime";
             var jPath    = Path.Combine(watch, jobName);
-            var repo     = _shards.GetOrCreate(jobName, jPath);
-            bool isInit  = repo is not null && !repo.IsInitialScanDone();
+            var queue    = _shards.GetOrCreate(jobName, jPath);
+            bool isInit  = queue is not null && !queue.Repository.IsInitialScanDone();
             jobInitFlags[jobName] = isInit;
             return isInit ? "JobInit" : "Runtime";
         }
@@ -139,9 +139,9 @@ public class CatchUpScanner : IDisposable
         {
             // Scoped scan: pull baselines from this job's shard only.
             var jobName = Path.GetFileName(jobPath.TrimEnd('\\', '/'));
-            var repo    = _shards.GetOrCreate(jobName, jobPath);
-            allBaselines = repo is not null
-                ? await repo.GetAllBaselinesAsync()
+            var queue   = _shards.GetOrCreate(jobName, jobPath);
+            allBaselines = queue is not null
+                ? await queue.Repository.GetAllBaselinesAsync()
                 : new List<FileBaseline>();
         }
         else
@@ -294,9 +294,9 @@ public class CatchUpScanner : IDisposable
         foreach (var (jn, wasInit) in jobInitFlags)
         {
             if (!wasInit) continue;
-            var jp   = Path.Combine(_config.WatchPath.TrimEnd('\\', '/'), jn);
-            var repo = _shards.GetOrCreate(jn, jp);
-            if (repo is not null) await repo.SetInitialScanDoneAsync();
+            var jp    = Path.Combine(_config.WatchPath.TrimEnd('\\', '/'), jn);
+            var queue = _shards.GetOrCreate(jn, jp);
+            if (queue is not null) await queue.Repository.SetInitialScanDoneAsync();
         }
 
         sw.Stop();
@@ -319,7 +319,7 @@ public class CatchUpScanner : IDisposable
 
         var jobName = relative[..sep];
         var jobPath = Path.Combine(watch, jobName);
-        return _shards.GetOrCreate(jobName, jobPath);
+        return _shards.GetOrCreate(jobName, jobPath)?.Repository;
     }
 
     private string MakeRelPath(string filePath)
@@ -346,10 +346,10 @@ public class CatchUpScanner : IDisposable
 
         foreach (var jn in jobNames)
         {
-            var jp   = Path.Combine(_config.WatchPath, jn);
-            var repo = _shards.GetOrCreate(jn, jp);
-            if (repo is null) continue;
-            result.AddRange(await repo.GetAllBaselinesAsync());
+            var jp    = Path.Combine(_config.WatchPath, jn);
+            var queue = _shards.GetOrCreate(jn, jp);
+            if (queue is null) continue;
+            result.AddRange(await queue.Repository.GetAllBaselinesAsync());
         }
         return result;
     }

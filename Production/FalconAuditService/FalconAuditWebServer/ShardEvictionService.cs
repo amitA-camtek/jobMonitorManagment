@@ -1,122 +1,84 @@
 namespace FalconAuditService;
 
-using System.Collections.Concurrent;
-using FalconAuditWebServer.Services;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
-/// When a tracked-file Deleted event empties a job folder (only `.audit\` remains),
-/// schedule a debounced eviction: close the SQLite shard, then remove the
-/// orphaned `.audit\` directory and the now-empty job folder. This lets the user's
-/// `Remove-Item -Recurse C:\job\{jobName}` complete cleanly on retry — the SQLite
-/// handles that previously kept `.audit\audit.db` locked are released within the
-/// grace window.
+/// Cleans up orphaned `.audit\` folders and any leftover job-folder files
+/// after BIS has finished its `Directory.Delete(jobPath, recursive)`.
+///
+/// In the lazy-connection model, the audit service does not hold long-lived
+/// SQLite handles, so BIS's recursive delete typically completes cleanly on
+/// its first attempt. This service exists to:
+///   • drain the per-job AuditEventQueue if events were buffered
+///   • record the departure in manifest.json (best-effort, may no-op if .audit\ is gone)
+///   • cancel any in-flight origin-check task for this job
+///   • sweep `.audit\` and known orphan files (e.g. `MetaData.ini`) so the
+///     job folder can be removed if BIS left it half-deleted
+///
+/// Invoked by:
+///   • DirectoryWatcher onDeparted (folder gone — main path)
+///   • DELETE /api/jobs/{name} (Falcon.Net's JobSerializer.Delete announcing intent)
 /// </summary>
-public class ShardEvictionService : IDisposable
+public class ShardEvictionService
 {
-    private static readonly TimeSpan GracePeriod = TimeSpan.FromSeconds(2);
-
     // Falcon.Net leaves these job-level files behind when its non-recursive
-    // JobSerializer.Delete fails. Treat them as ignorable when deciding whether
-    // a job folder is effectively empty, and sweep them during eviction.
+    // JobSerializer.Delete fails. Sweep them during eviction.
     private static readonly HashSet<string> IgnoredOrphanFiles =
         new(StringComparer.OrdinalIgnoreCase) { "MetaData.ini" };
 
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _pending =
-        new(StringComparer.OrdinalIgnoreCase);
     private readonly ShardRegistry   _shards;
     private readonly ManifestManager _manifest;
     private readonly JobOriginChecker _origin;
-    private readonly QueryRepository _queryRepo;
     private readonly ILogger<ShardEvictionService> _logger;
 
     public ShardEvictionService(
         ShardRegistry shards,
         ManifestManager manifest,
         JobOriginChecker origin,
-        QueryRepository queryRepo,
         ILogger<ShardEvictionService> logger)
     {
         _shards    = shards;
         _manifest  = manifest;
         _origin    = origin;
-        _queryRepo = queryRepo;
         _logger    = logger;
     }
 
-    /// <summary>Called from FileChangeHandler after a Deleted event when the job folder is now empty.</summary>
-    public void Schedule(string jobName, string jobPath)
-    {
-        var newCts = new CancellationTokenSource();
-        // AddOrUpdate atomically cancels any existing entry and registers the new one.
-        // We only Cancel — the in-flight EvictAfterGraceAsync owns the CTS lifecycle
-        // and disposes it in its own finally block. Disposing here would race with
-        // the in-flight `await Task.Delay(GracePeriod, cts.Token)` and surface as
-        // ObjectDisposedException.
-        var registered = _pending.AddOrUpdate(jobName, newCts, (_, old) =>
-        {
-            old.Cancel();
-            return newCts;
-        });
-
-        if (!ReferenceEquals(registered, newCts))
-        {
-            newCts.Dispose();
-            return;
-        }
-
-        _ = Task.Run(() => EvictAfterGraceAsync(jobName, jobPath, newCts));
-        _logger.LogDebug("ShardEvictionService: scheduled eviction for '{J}' in {S}s.", jobName, GracePeriod.TotalSeconds);
-    }
-
-    /// <summary>Called from FileChangeHandler on Created/Modified/Renamed events — keeps the shard alive.</summary>
-    public void Cancel(string jobName)
-    {
-        if (_pending.TryRemove(jobName, out var cts))
-        {
-            cts.Cancel();
-            // Don't Dispose here — the in-flight EvictAfterGraceAsync's finally block
-            // owns disposal. See the comment in Schedule().
-            _logger.LogDebug("ShardEvictionService: pending eviction cancelled for '{J}'.", jobName);
-        }
-    }
-
-    private async Task EvictAfterGraceAsync(string jobName, string jobPath, CancellationTokenSource cts)
+    /// <summary>
+    /// Run the eviction now: drain the queue if possible, record departure,
+    /// cancel pending origin check, sweep the orphan `.audit\` and `MetaData.ini`,
+    /// and remove the empty job folder.
+    /// </summary>
+    public async Task EvictNowAsync(string jobName, string jobPath, string reason)
     {
         try
         {
-            await Task.Delay(GracePeriod, cts.Token);
-
-            if (!IsJobFolderEffectivelyEmpty(jobPath))
-            {
-                _logger.LogDebug("ShardEvictionService: '{J}' no longer empty; skipping eviction.", jobName);
-                return;
-            }
-
             _origin.CancelCheck(jobName);
-            await _manifest.RecordDepartureAsync(jobPath);
-            _shards.Remove(jobName);
-            _queryRepo.CloseShard(Path.Combine(jobPath, ".audit", "audit.db"));
+
+            // Drain any pending events (may no-op if the audit DB is already gone)
+            // and AWAIT the dispose so the SQLite handle on audit.db is released
+            // before we proceed. Without this await, a still-running in-flight
+            // flush (started by the queue's timer just before Discard cleared the
+            // buffer) would keep audit.db / audit.db-wal open while Falcon's
+            // recursive Directory.Delete(jobPath) runs — leaving a ghost
+            // .audit\ folder behind.
+            await _shards.DiscardOnDepartureAsync(jobName);
+
+            // Best-effort manifest departure. If .audit\ is already gone, the
+            // ManifestManager logs a debug and returns.
+            try { await _manifest.RecordDepartureAsync(jobPath); }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "ShardEvictionService: manifest departure no-op for '{J}'.", jobName);
+            }
 
             TryDeleteAuditFolder(jobName, jobPath);
             TryDeleteJobFolderIfEmpty(jobName, jobPath);
 
-            _logger.LogInformation("ShardEvictionService: evicted shard for '{J}' (job folder emptied).", jobName);
-        }
-        catch (OperationCanceledException)
-        {
-            // Cancelled by Cancel() — a new file appeared during the grace window.
+            _logger.LogInformation("ShardEvictionService: evicted '{J}' ({R}).", jobName, reason);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "ShardEvictionService: eviction failed for '{J}'.", jobName);
-        }
-        finally
-        {
-            // Only remove if this CTS is still the registered one (a newer Schedule may have replaced us).
-            if (_pending.TryGetValue(jobName, out var current) && ReferenceEquals(current, cts))
-                _pending.TryRemove(jobName, out _);
-            cts.Dispose();
+            _logger.LogError(ex, "ShardEvictionService: EvictNow failed for '{J}'.", jobName);
         }
     }
 
@@ -147,7 +109,6 @@ public class ShardEvictionService : IDisposable
         try
         {
             if (!Directory.Exists(auditDir)) return;
-            // Hidden attribute on .audit/ would block recursive delete on some configs.
             ClearHiddenAttribute(auditDir);
             Directory.Delete(auditDir, recursive: true);
             _logger.LogInformation("ShardEvictionService: removed orphaned .audit\\ for '{J}'.", jobName);
@@ -164,9 +125,6 @@ public class ShardEvictionService : IDisposable
         {
             if (!Directory.Exists(jobPath)) return;
 
-            // Sweep known leftover files (e.g. MetaData.ini that Falcon.Net's
-            // non-recursive JobSerializer.Delete leaves behind) so the parent
-            // folder is truly empty and can be removed.
             foreach (var entry in Directory.EnumerateFiles(jobPath))
             {
                 var name = Path.GetFileName(entry);
@@ -199,12 +157,5 @@ public class ShardEvictionService : IDisposable
                 File.SetAttributes(dir, attrs & ~FileAttributes.Hidden);
         }
         catch { }
-    }
-
-    public void Dispose()
-    {
-        // Only Cancel — each in-flight EvictAfterGraceAsync disposes its own CTS in finally.
-        foreach (var cts in _pending.Values) cts.Cancel();
-        _pending.Clear();
     }
 }

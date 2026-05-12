@@ -4,54 +4,74 @@ using FalconAuditService.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
-public class SqliteRepository : IDisposable
+/// <summary>
+/// Per-job SQLite shard accessor with **lazy connections** — no handle is held
+/// between calls. Every method opens its own connection, does the work, closes
+/// the connection. This keeps `audit.db` unlocked between writes so BIS's
+/// recursive delete of the job folder never hits a sharing violation.
+///
+/// For high-frequency write traffic, route through <see cref="AuditEventQueue"/>
+/// (one per job) which buffers events and calls <see cref="WriteBatchAsync"/>
+/// once per flush — a single open-transaction-close cycle for many events.
+/// </summary>
+public class SqliteRepository
 {
-    private readonly SqliteConnection _conn;
-    private readonly SqliteConnection _readConn;
-    private readonly SemaphoreSlim    _writeLock = new(1, 1);
-    private readonly SemaphoreSlim    _readLock  = new(1, 1);
-    private volatile bool             _disposed;
+    private readonly string _dbPath;
     private readonly ILogger<SqliteRepository> _logger;
 
     public SqliteRepository(string dbPath, ILogger<SqliteRepository> logger)
     {
+        _dbPath = dbPath;
         _logger = logger;
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
-
-        // Pooling=False ensures Dispose immediately releases the OS file handle
-        // so the .audit\ directory can be removed when a job is evicted.
-        _conn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
-        _conn.Open();
-
-        _readConn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
-        _readConn.Open();
-
-        using var rp = _readConn.CreateCommand();
-        rp.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=3000;";
-        rp.ExecuteNonQuery();
-
-        using var wp = _conn.CreateCommand();
-        wp.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=3000; PRAGMA wal_autocheckpoint=200;";
-        wp.ExecuteNonQuery();
-
-        using var check = _conn.CreateCommand();
-        check.CommandText = "PRAGMA journal_mode;";
-        var mode = check.ExecuteScalar()?.ToString();
-        if (!string.Equals(mode, "wal", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException(
-                $"SQLite WAL mode could not be enabled (got '{mode}'). " +
-                "Ensure the database is not on a network share or FAT32 volume.");
-
         EnsureSchema();
-        logger.LogInformation("SqliteRepository: ready. DB={D}", dbPath);
+        logger.LogInformation("SqliteRepository: ready (lazy). DB={D}", dbPath);
     }
 
-    // ── Schema ───────────────────────────────────────────────────────────────
+    public string DbPath => _dbPath;
+
+    // ── connection helpers ──────────────────────────────────────────────────
+
+    private SqliteConnection OpenWrite()
+    {
+        // Pooling=False ensures Dispose immediately releases the OS file handle.
+        var conn = new SqliteConnection($"Data Source={_dbPath};Pooling=False");
+        conn.Open();
+        using var p = conn.CreateCommand();
+        p.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=3000; PRAGMA wal_autocheckpoint=200;";
+        p.ExecuteNonQuery();
+        return conn;
+    }
+
+    private SqliteConnection OpenRead()
+    {
+        var conn = new SqliteConnection($"Data Source={_dbPath};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        using var p = conn.CreateCommand();
+        p.CommandText = "PRAGMA busy_timeout=3000;";
+        p.ExecuteNonQuery();
+        return conn;
+    }
+
+    // ── Schema ──────────────────────────────────────────────────────────────
 
     private void EnsureSchema()
     {
-        using var tx  = _conn.BeginTransaction();
-        using var cmd = _conn.CreateCommand();
+        using var conn = OpenWrite();
+
+        // verify WAL was actually enabled (PRAGMA in OpenWrite already ran it)
+        using (var check = conn.CreateCommand())
+        {
+            check.CommandText = "PRAGMA journal_mode;";
+            var mode = check.ExecuteScalar()?.ToString();
+            if (!string.Equals(mode, "wal", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    $"SQLite WAL mode could not be enabled (got '{mode}'). " +
+                    "Ensure the database is not on a network share or FAT32 volume.");
+        }
+
+        using var tx  = conn.BeginTransaction();
+        using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = @"
             CREATE TABLE IF NOT EXISTS audit_log (
@@ -114,15 +134,13 @@ public class SqliteRepository : IDisposable
         cmd.ExecuteNonQuery();
         tx.Commit();
 
-        MigrateSchema();
+        MigrateSchema(conn);
     }
 
-    // Migrates databases created before the current schema version.
-    // ALTER TABLE ADD COLUMN is idempotent-safe only via try/catch (SQLite has no IF NOT EXISTS).
-    private void MigrateSchema()
+    private void MigrateSchema(SqliteConnection conn)
     {
         var version = 1;
-        using (var qv = _conn.CreateCommand())
+        using (var qv = conn.CreateCommand())
         {
             qv.CommandText = "SELECT value FROM schema_meta WHERE key='schema_version'";
             var raw = qv.ExecuteScalar()?.ToString();
@@ -131,48 +149,42 @@ public class SqliteRepository : IDisposable
 
         if (version < 2)
         {
-            AlterTableAddColumns(new[] { "file_description TEXT NOT NULL DEFAULT ''",
-                                         "change_summary   TEXT NOT NULL DEFAULT ''" });
-            SetSchemaVersion(2);
+            AlterTableAddColumns(conn, new[] { "file_description TEXT NOT NULL DEFAULT ''",
+                                                "change_summary   TEXT NOT NULL DEFAULT ''" });
+            SetSchemaVersion(conn, 2);
             _logger.LogInformation("SqliteRepository: migrated schema to v2 (file_description, change_summary).");
         }
 
         if (version < 3)
         {
-            AlterTableAddColumns(new[] { "is_backfill  INTEGER NOT NULL DEFAULT 0",
-                                          "old_filepath TEXT NULL" });
-            SetSchemaVersion(3);
+            AlterTableAddColumns(conn, new[] { "is_backfill  INTEGER NOT NULL DEFAULT 0",
+                                                 "old_filepath TEXT NULL" });
+            SetSchemaVersion(conn, 3);
             _logger.LogInformation("SqliteRepository: migrated schema to v3 (is_backfill, old_filepath).");
         }
 
         if (version < 4)
         {
-            AlterTableAddColumns(new[] { "login_user TEXT NULL" });
-            SetSchemaVersion(4);
+            AlterTableAddColumns(conn, new[] { "login_user TEXT NULL" });
+            SetSchemaVersion(conn, 4);
             _logger.LogInformation("SqliteRepository: migrated schema to v4 (login_user).");
         }
 
         if (version < 5)
         {
-            AlterTableAddColumns(new[] { "setup_name TEXT NULL", "recipe_name TEXT NULL" });
-            SetSchemaVersion(5);
+            AlterTableAddColumns(conn, new[] { "setup_name TEXT NULL", "recipe_name TEXT NULL" });
+            SetSchemaVersion(conn, 5);
             _logger.LogInformation("SqliteRepository: migrated schema to v5 (setup_name, recipe_name).");
         }
     }
 
-    /// <summary>
-    /// Applies ALTER TABLE ADD COLUMN for each definition in <paramref name="columnDefs"/>.
-    /// SECURITY: SQLite does not support parameter binding for DDL column definitions.
-    /// <paramref name="columnDefs"/> MUST contain only compile-time constant strings from
-    /// <see cref="MigrateSchema"/>. NEVER pass user input or configuration values here.
-    /// </summary>
-    private void AlterTableAddColumns(string[] columnDefs)
+    private static void AlterTableAddColumns(SqliteConnection conn, string[] columnDefs)
     {
         foreach (var col in columnDefs)
         {
             try
             {
-                using var ac = _conn.CreateCommand();
+                using var ac = conn.CreateCommand();
                 ac.CommandText = $"ALTER TABLE audit_log ADD COLUMN {col}";
                 ac.ExecuteNonQuery();
             }
@@ -184,229 +196,214 @@ public class SqliteRepository : IDisposable
         }
     }
 
-    private void SetSchemaVersion(int version)
+    private static void SetSchemaVersion(SqliteConnection conn, int version)
     {
-        using var uv = _conn.CreateCommand();
+        using var uv = conn.CreateCommand();
         uv.CommandText = "INSERT OR REPLACE INTO schema_meta (key,value) VALUES ('schema_version',@v)";
         uv.Parameters.AddWithValue("@v", version.ToString());
         uv.ExecuteNonQuery();
     }
 
-    // ── audit_log ────────────────────────────────────────────────────────────
+    // ── audit_log writes ────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Insert a single audit row + upsert its baseline. Opens its own connection.
+    /// Use <see cref="WriteBatchAsync"/> for multiple events from the same job.
+    /// </summary>
     public async Task InsertAuditEventAsync(AuditLogEntry e, FileBaseline baseline)
     {
-        if (_disposed) return;
-        try { await _writeLock.WaitAsync(); }
-        catch (ObjectDisposedException) { return; }
-        try
+        await WriteBatchAsync(new[] { (e, baseline) });
+    }
+
+    /// <summary>
+    /// Insert N audit rows and upsert their baselines in a single transaction.
+    /// One open-transaction-close cycle for the whole batch — minimum write
+    /// amplification on `audit.db`.
+    /// </summary>
+    public async Task WriteBatchAsync(IReadOnlyList<(AuditLogEntry Entry, FileBaseline Baseline)> batch)
+    {
+        if (batch.Count == 0) return;
+
+        // SqliteConnection is sync-only on Open/Dispose; the inserts are async.
+        await using var conn = OpenWrite();
+        await using var tx   = (SqliteTransaction)await conn.BeginTransactionAsync();
+
+        await using var ins = conn.CreateCommand();
+        ins.Transaction = tx;
+        ins.CommandText = @"
+            INSERT INTO audit_log
+              (changed_at, event_type, filepath, rel_filepath, module, owner_service,
+               monitor_priority, machine_name, sha256_hash, old_content, diff_text,
+               file_description, change_summary, is_backfill, old_filepath, login_user,
+               setup_name, recipe_name, file_era)
+            VALUES (@ca,@et,@fp,@rfp,@mod,@svc,@pri,@mn,@hash,@oc,@dt,@fd,@cs,@ib,@ofp,@lu,@sn,@rn,@fe)";
+        // Pre-create parameters; reset values per row.
+        var pCa  = ins.Parameters.Add("@ca",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pEt  = ins.Parameters.Add("@et",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pFp  = ins.Parameters.Add("@fp",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pRfp = ins.Parameters.Add("@rfp", Microsoft.Data.Sqlite.SqliteType.Text);
+        var pMod = ins.Parameters.Add("@mod", Microsoft.Data.Sqlite.SqliteType.Text);
+        var pSvc = ins.Parameters.Add("@svc", Microsoft.Data.Sqlite.SqliteType.Text);
+        var pPri = ins.Parameters.Add("@pri", Microsoft.Data.Sqlite.SqliteType.Text);
+        var pMn  = ins.Parameters.Add("@mn",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pHsh = ins.Parameters.Add("@hash",Microsoft.Data.Sqlite.SqliteType.Text);
+        var pOc  = ins.Parameters.Add("@oc",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pDt  = ins.Parameters.Add("@dt",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pFd  = ins.Parameters.Add("@fd",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pCs  = ins.Parameters.Add("@cs",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pIb  = ins.Parameters.Add("@ib",  Microsoft.Data.Sqlite.SqliteType.Integer);
+        var pOfp = ins.Parameters.Add("@ofp", Microsoft.Data.Sqlite.SqliteType.Text);
+        var pLu  = ins.Parameters.Add("@lu",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pSn  = ins.Parameters.Add("@sn",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pRn  = ins.Parameters.Add("@rn",  Microsoft.Data.Sqlite.SqliteType.Text);
+        var pFe  = ins.Parameters.Add("@fe",  Microsoft.Data.Sqlite.SqliteType.Text);
+
+        await using var upb = conn.CreateCommand();
+        upb.Transaction = tx;
+        upb.CommandText = @"
+            INSERT INTO file_baselines (filepath, last_hash, last_seen, last_content)
+            VALUES (@fp, @lh, @ls, @lc)
+            ON CONFLICT(filepath) DO UPDATE SET
+              last_hash    = excluded.last_hash,
+              last_seen    = excluded.last_seen,
+              last_content = excluded.last_content";
+        var bFp = upb.Parameters.Add("@fp", Microsoft.Data.Sqlite.SqliteType.Text);
+        var bLh = upb.Parameters.Add("@lh", Microsoft.Data.Sqlite.SqliteType.Text);
+        var bLs = upb.Parameters.Add("@ls", Microsoft.Data.Sqlite.SqliteType.Text);
+        var bLc = upb.Parameters.Add("@lc", Microsoft.Data.Sqlite.SqliteType.Text);
+
+        foreach (var (e, baseline) in batch)
         {
-            if (_disposed) { _writeLock.Release(); return; }
-            using var tx = _conn.BeginTransaction();
-            using var ins = _conn.CreateCommand();
-            ins.Transaction = tx;
-            ins.CommandText = @"
-                INSERT INTO audit_log
-                  (changed_at, event_type, filepath, rel_filepath, module, owner_service,
-                   monitor_priority, machine_name, sha256_hash, old_content, diff_text,
-                   file_description, change_summary, is_backfill, old_filepath, login_user,
-                   setup_name, recipe_name, file_era)
-                VALUES (@ca,@et,@fp,@rfp,@mod,@svc,@pri,@mn,@hash,@oc,@dt,@fd,@cs,@ib,@ofp,@lu,@sn,@rn,@fe)";
-            ins.Parameters.AddWithValue("@ca",  e.ChangedAt);
-            ins.Parameters.AddWithValue("@et",  e.EventType);
-            ins.Parameters.AddWithValue("@fp",  e.Filepath);
-            ins.Parameters.AddWithValue("@rfp", e.RelFilepath);
-            ins.Parameters.AddWithValue("@mod", e.Module);
-            ins.Parameters.AddWithValue("@svc", e.OwnerService);
-            ins.Parameters.AddWithValue("@pri", e.MonitorPriority);
-            ins.Parameters.AddWithValue("@mn",  e.MachineName);
-            ins.Parameters.AddWithValue("@hash",e.Sha256Hash);
-            ins.Parameters.AddWithValue("@oc",  (object?)e.OldContent   ?? DBNull.Value);
-            ins.Parameters.AddWithValue("@dt",  (object?)e.DiffText     ?? DBNull.Value);
-            ins.Parameters.AddWithValue("@fd",  e.FileDescription);
-            ins.Parameters.AddWithValue("@cs",  e.ChangeSummary);
-            ins.Parameters.AddWithValue("@ib",  e.IsBackfill ? 1 : 0);
-            ins.Parameters.AddWithValue("@ofp", (object?)e.OldFilepath  ?? DBNull.Value);
-            ins.Parameters.AddWithValue("@lu",  (object?)e.LoginUser    ?? DBNull.Value);
-            ins.Parameters.AddWithValue("@sn",  (object?)e.Setup        ?? DBNull.Value);
-            ins.Parameters.AddWithValue("@rn",  (object?)e.Recipe       ?? DBNull.Value);
-            ins.Parameters.AddWithValue("@fe",  (object?)e.FileEra      ?? DBNull.Value);
+            pCa.Value  = e.ChangedAt;
+            pEt.Value  = e.EventType;
+            pFp.Value  = e.Filepath;
+            pRfp.Value = e.RelFilepath;
+            pMod.Value = e.Module;
+            pSvc.Value = e.OwnerService;
+            pPri.Value = e.MonitorPriority;
+            pMn.Value  = e.MachineName;
+            pHsh.Value = e.Sha256Hash;
+            pOc.Value  = (object?)e.OldContent  ?? DBNull.Value;
+            pDt.Value  = (object?)e.DiffText    ?? DBNull.Value;
+            pFd.Value  = e.FileDescription;
+            pCs.Value  = e.ChangeSummary;
+            pIb.Value  = e.IsBackfill ? 1 : 0;
+            pOfp.Value = (object?)e.OldFilepath ?? DBNull.Value;
+            pLu.Value  = (object?)e.LoginUser   ?? DBNull.Value;
+            pSn.Value  = (object?)e.Setup       ?? DBNull.Value;
+            pRn.Value  = (object?)e.Recipe      ?? DBNull.Value;
+            pFe.Value  = (object?)e.FileEra     ?? DBNull.Value;
             await ins.ExecuteNonQueryAsync();
 
-            using var upb = _conn.CreateCommand();
-            upb.Transaction = tx;
-            upb.CommandText = @"
-                INSERT INTO file_baselines (filepath, last_hash, last_seen, last_content)
-                VALUES (@fp, @lh, @ls, @lc)
-                ON CONFLICT(filepath) DO UPDATE SET
-                  last_hash    = excluded.last_hash,
-                  last_seen    = excluded.last_seen,
-                  last_content = excluded.last_content";
-            upb.Parameters.AddWithValue("@fp", baseline.Filepath);
-            upb.Parameters.AddWithValue("@lh", baseline.LastHash);
-            upb.Parameters.AddWithValue("@ls", baseline.LastSeen);
-            upb.Parameters.AddWithValue("@lc", (object?)baseline.LastContent ?? DBNull.Value);
+            bFp.Value = baseline.Filepath;
+            bLh.Value = baseline.LastHash;
+            bLs.Value = baseline.LastSeen;
+            bLc.Value = (object?)baseline.LastContent ?? DBNull.Value;
             await upb.ExecuteNonQueryAsync();
-
-            tx.Commit();
         }
-        catch (ObjectDisposedException) when (_disposed) { }
-        finally { _writeLock.Release(); }
+
+        await tx.CommitAsync();
     }
 
-    /// <summary>Update a baseline entry without writing an audit event (used for unchanged files in CatchUpScanner).</summary>
+    /// <summary>Update a baseline entry without writing an audit event (used by CatchUpScanner for unchanged files).</summary>
     public async Task UpsertBaselineAsync(FileBaseline baseline)
     {
-        if (_disposed) return;
-        try { await _writeLock.WaitAsync(); }
-        catch (ObjectDisposedException) { return; }
-        try
-        {
-            if (_disposed) { _writeLock.Release(); return; }
-            using var tx  = _conn.BeginTransaction();
-            using var cmd = _conn.CreateCommand();
-            cmd.Transaction = tx;
-            cmd.CommandText = @"
-                INSERT INTO file_baselines (filepath, last_hash, last_seen, last_content)
-                VALUES (@fp, @lh, @ls, @lc)
-                ON CONFLICT(filepath) DO UPDATE SET
-                  last_hash    = excluded.last_hash,
-                  last_seen    = excluded.last_seen,
-                  last_content = excluded.last_content";
-            cmd.Parameters.AddWithValue("@fp", baseline.Filepath);
-            cmd.Parameters.AddWithValue("@lh", baseline.LastHash);
-            cmd.Parameters.AddWithValue("@ls", baseline.LastSeen);
-            cmd.Parameters.AddWithValue("@lc", (object?)baseline.LastContent ?? DBNull.Value);
-            await cmd.ExecuteNonQueryAsync();
-            tx.Commit();
-        }
-        catch (ObjectDisposedException) when (_disposed) { }
-        finally { _writeLock.Release(); }
+        await using var conn = OpenWrite();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT INTO file_baselines (filepath, last_hash, last_seen, last_content)
+            VALUES (@fp, @lh, @ls, @lc)
+            ON CONFLICT(filepath) DO UPDATE SET
+              last_hash    = excluded.last_hash,
+              last_seen    = excluded.last_seen,
+              last_content = excluded.last_content";
+        cmd.Parameters.AddWithValue("@fp", baseline.Filepath);
+        cmd.Parameters.AddWithValue("@lh", baseline.LastHash);
+        cmd.Parameters.AddWithValue("@ls", baseline.LastSeen);
+        cmd.Parameters.AddWithValue("@lc", (object?)baseline.LastContent ?? DBNull.Value);
+        await cmd.ExecuteNonQueryAsync();
     }
 
-    // ── file_baselines ───────────────────────────────────────────────────────
+    // ── file_baselines reads ────────────────────────────────────────────────
 
     public async Task<FileBaseline?> GetBaselineAsync(string filepath)
     {
-        if (_disposed) return null;
-        try { await _readLock.WaitAsync(); }
-        catch (ObjectDisposedException) { return null; }
-        try
+        await using var conn = OpenRead();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT filepath, last_hash, last_seen, last_content " +
+            "FROM file_baselines WHERE filepath=@fp";
+        cmd.Parameters.AddWithValue("@fp", filepath);
+        await using var r = await cmd.ExecuteReaderAsync();
+        if (!await r.ReadAsync()) return null;
+        return new FileBaseline
         {
-            using var cmd = _readConn.CreateCommand();
-            cmd.CommandText =
-                "SELECT filepath, last_hash, last_seen, last_content " +
-                "FROM file_baselines WHERE filepath=@fp";
-            cmd.Parameters.AddWithValue("@fp", filepath);
-            using var r = await cmd.ExecuteReaderAsync();
-            if (!await r.ReadAsync()) return null;
-            return new FileBaseline
+            Filepath    = r.GetString(0),
+            LastHash    = r.GetString(1),
+            LastSeen    = r.GetString(2),
+            LastContent = r.IsDBNull(3) ? null : r.GetString(3)
+        };
+    }
+
+    public async Task<List<FileBaseline>> GetAllBaselinesAsync()
+    {
+        await using var conn = OpenRead();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT filepath, last_hash, last_seen, last_content " +
+            "FROM file_baselines";
+        var list = new List<FileBaseline>();
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+            list.Add(new FileBaseline
             {
                 Filepath    = r.GetString(0),
                 LastHash    = r.GetString(1),
                 LastSeen    = r.GetString(2),
                 LastContent = r.IsDBNull(3) ? null : r.GetString(3)
-            };
-        }
-        catch (Exception) when (_disposed) { return null; }
-        finally { _readLock.Release(); }
-    }
-
-    public async Task<List<FileBaseline>> GetAllBaselinesAsync()
-    {
-        if (_disposed) return new();
-        try { await _readLock.WaitAsync(); }
-        catch (ObjectDisposedException) { return new(); }
-        try
-        {
-            var list = new List<FileBaseline>();
-            using var cmd = _readConn.CreateCommand();
-            cmd.CommandText =
-                "SELECT filepath, last_hash, last_seen, last_content " +
-                "FROM file_baselines";
-            using var r = await cmd.ExecuteReaderAsync();
-            while (await r.ReadAsync())
-                list.Add(new FileBaseline
-                {
-                    Filepath    = r.GetString(0),
-                    LastHash    = r.GetString(1),
-                    LastSeen    = r.GetString(2),
-                    LastContent = r.IsDBNull(3) ? null : r.GetString(3)
-                });
-            return list;
-        }
-        catch (Exception) when (_disposed) { return new(); }
-        finally { _readLock.Release(); }
+            });
+        return list;
     }
 
     public async Task DeleteBaselineAsync(string filepath)
     {
-        if (_disposed) return;
-        try { await _writeLock.WaitAsync(); }
-        catch (ObjectDisposedException) { return; }
-        try
-        {
-            if (_disposed) { _writeLock.Release(); return; }
-            using var cmd = _conn.CreateCommand();
-            cmd.CommandText = "DELETE FROM file_baselines WHERE filepath=@fp";
-            cmd.Parameters.AddWithValue("@fp", filepath);
-            await cmd.ExecuteNonQueryAsync();
-        }
-        catch (ObjectDisposedException) when (_disposed) { }
-        finally { _writeLock.Release(); }
+        await using var conn = OpenWrite();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM file_baselines WHERE filepath=@fp";
+        cmd.Parameters.AddWithValue("@fp", filepath);
+        await cmd.ExecuteNonQueryAsync();
     }
 
-    // ── monitor_config ───────────────────────────────────────────────────────
+    // ── monitor_config ──────────────────────────────────────────────────────
 
     public async Task SetConfigValueAsync(string key, string value)
     {
-        if (_disposed) return;
-        try { await _writeLock.WaitAsync(); }
-        catch (ObjectDisposedException) { return; }
-        try
-        {
-            if (_disposed) { _writeLock.Release(); return; }
-            using var cmd = _conn.CreateCommand();
-            cmd.CommandText = "INSERT OR REPLACE INTO monitor_config (key, value) VALUES (@k, @v)";
-            cmd.Parameters.AddWithValue("@k", key);
-            cmd.Parameters.AddWithValue("@v", value);
-            await cmd.ExecuteNonQueryAsync();
-        }
-        catch (ObjectDisposedException) when (_disposed) { }
-        finally { _writeLock.Release(); }
+        await using var conn = OpenWrite();
+        await using var cmd  = conn.CreateCommand();
+        cmd.CommandText = "INSERT OR REPLACE INTO monitor_config (key, value) VALUES (@k, @v)";
+        cmd.Parameters.AddWithValue("@k", key);
+        cmd.Parameters.AddWithValue("@v", value);
+        await cmd.ExecuteNonQueryAsync();
     }
 
     public string? GetConfigValue(string key)
     {
-        if (_disposed) return null;
-        try { _readLock.Wait(); }
-        catch (ObjectDisposedException) { return null; }
         try
         {
-            using var cmd = _readConn.CreateCommand();
+            using var conn = OpenRead();
+            using var cmd  = conn.CreateCommand();
             cmd.CommandText = "SELECT value FROM monitor_config WHERE key=@k";
             cmd.Parameters.AddWithValue("@k", key);
             return cmd.ExecuteScalar()?.ToString();
         }
-        catch (Exception) when (_disposed) { return null; }
-        finally { _readLock.Release(); }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "GetConfigValue({K}) failed.", key);
+            return null;
+        }
     }
 
-    public bool IsInitialScanDone()
-        => GetConfigValue("initial_scan_done") is not null;
+    public bool IsInitialScanDone() => GetConfigValue("initial_scan_done") is not null;
 
-    public Task SetInitialScanDoneAsync()
-        => SetConfigValueAsync("initial_scan_done", "true");
-
-    public void Dispose()
-    {
-        _disposed = true;
-        // Drain the semaphore so any in-progress write can finish before we close connections.
-        try { _writeLock.Wait(TimeSpan.FromSeconds(5)); } catch { }
-        _conn.Dispose();
-        _readConn.Dispose();
-        try { _writeLock.Release(); } catch { }
-        _writeLock.Dispose();
-        _readLock.Dispose();
-    }
+    public Task SetInitialScanDoneAsync() => SetConfigValueAsync("initial_scan_done", "true");
 }

@@ -21,4 +21,13 @@ public class MonitorConfig
     public int    OriginSampleSize      { get; set; } = 10;   // max P1 files to NTFS-sample
     public int    OriginDeltaMinutes    { get; set; } = 5;    // threshold: CreationTime − LastWriteTime > this → copied
     public double OriginCopiedRatio     { get; set; } = 0.6;  // fraction of sample that must exceed delta
+
+    // ── Lazy SQLite write queue ────────────────────────────────────────────
+    // The audit service does NOT keep audit.db open between writes. FSW events
+    // are queued in memory; a per-job timer flushes the queue to audit.db in a
+    // single transaction. Read API calls force a flush before querying so no
+    // pending data is missed.
+    public int FlushIntervalSeconds         { get; set; } = 1;
+    public int FlushQueueMax                { get; set; } = 200;
+    public int ReadConnectionTimeoutSeconds { get; set; } = 30;
 }

@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(findstr :5100)",
+      "Bash(tasklist *)",
+      "Bash(awk '/2026-05-06 14:09:0[5-9]/,/2026-05-06 14:09:5[0-9]/' \"C:/bis/ErrorLog/AOI_Main_2026_5_6.net\"ob was deleted with no exeption)",
+      "Bash(dotnet tool *)",
+      "Bash(dotnet-stack report *)",
+      "Bash(mkdir -p /c/tmp)",
+      "Read(//c/tmp/**)",
+      "Bash(awk '/2026-05-07 09:46:5/,/2026-05-07 09:47:1[0-9]/' \"C:/bis/ErrorLog/AOI_Main_2026_5_7.net\")",
+      "Bash(grep -E --line-buffered \"\\\\\\\\] \\(ERROR|FATAL\\) |Exception:|Unhandled |Busy\\\\\\\\.\\\\\\\\.\\\\\\\\.\")",
+      "Bash(awk '/2026-05-07 11:46:45,616.*DirectoryNotFoundException/,/^2026-05-07 11:46:[5-9][0-9]/' \"C:/bis/ErrorLog/AOI_Main_2026_5_7.net\")",
+      "Bash(awk '/^2026-05-07 13:2[4-9]:|^2026-05-07 13:[3-5][0-9]:/' \"C:/bis/ErrorLog/AuditLog/falconaudit-20260507_001.log\")",
+      "Bash(awk '/^2026-05-07 13:2[7-9]:/ || /^2026-05-07 13:30:/' \"C:/bis/ErrorLog/AuditLog/falconaudit-20260507_001.log\")",
+      "Bash(awk '/^2026-05-07 13:[3-5]/ && /Audit event queued/' \"C:/bis/ErrorLog/AuditLog/falconaudit-20260507_001.log\")",
+      "Bash(awk '/Audit event queued/' \"C:/bis/ErrorLog/AuditLog/falconaudit-20260507_001.log\")",
+      "Bash(awk '/^2026-05-07 14:5/' \"C:/bis/ErrorLog/AuditLog/falconaudit-20260507_001.log\")",
+      "Bash(awk '/^2026-05-07 14:55:[0-2][0-9]/' \"C:/bis/ErrorLog/AOI_Main_2026_5_7.net\")",
+      "Bash(awk '/^2026-05-07 14:55:0[8-9]|^2026-05-07 14:55:1[0-2]/' \"C:/bis/ErrorLog/AOI_Main_2026_5_7.net\")",
+      "Bash(powershell.exe -Command \"Get-Process -Id 41564 -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime, Responding | Format-List\")",
+      "Bash(awk '/^2026-05-07 15:2[89]:|^2026-05-07 15:3[0-9]:/' \"C:/bis/ErrorLog/AOI_Main_2026_5_7.net\")",
+      "Bash(git *)",
+      "Bash(findstr /I \"AOI_Main Falcon Audit\")",
+      "Bash(where dotnet-stack *)",
+      "Bash(dotnet-stack --help)",
+      "Bash(pwsh -NoProfile -Command \"Get-Content 'C:\\\\\\\\bis\\\\\\\\ErrorLog\\\\\\\\AOI_Main_2026_5_11.net' -Tail 0 -Wait | Select-String -Pattern 'ERROR|FATAL|Exception|Busy|Save-?As|delete|Delete|Create|create|recipe|Recipe|Reference|ProgressBar|ProgressOff|Catch|throw'\")",
+      "Bash(pwsh -NoProfile -Command \"Get-Content 'C:\\\\\\\\Amit\\\\\\\\jobMonitorManagment\\\\\\\\.claude\\\\\\\\audit_console.log' -Tail 0 -Wait | Select-String -Pattern 'ShardRegistry|DiscardOnDeparture|ManifestManager|Departed|Arrived|Evict|Dispose|ERR|Exception|FAIL|busy|locked|denied|delete|Delete|moved|Moved|create|Create'\")"
+    ]
+  }
+}

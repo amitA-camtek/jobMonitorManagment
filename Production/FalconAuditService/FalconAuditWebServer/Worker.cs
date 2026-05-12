@@ -86,7 +86,12 @@ public class Worker : BackgroundService
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("StopAsync requested. Draining queue.");
+        _logger.LogInformation("StopAsync requested. Draining queues.");
+
+        // Drain every per-job audit-event queue to disk before exit so no
+        // queued events are lost on a graceful shutdown.
+        try { await _shards.FlushAllAsync(); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Error flushing queues on shutdown."); }
 
         // Record departure in manifest for every active job
         foreach (var jobName in _shards.JobNames.ToList())
@@ -99,6 +104,11 @@ public class Worker : BackgroundService
         _dirWatcher.Stop();
         try { await _monitor.StopAsync(); }
         catch (Exception ex) { _logger.LogWarning(ex, "Error stopping FileMonitorService."); }
+
+        // Final dispose: cancels per-queue timers; redundant flush is a no-op.
+        try { await _shards.DisposeAsync(); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Error disposing ShardRegistry."); }
+
         await base.StopAsync(cancellationToken);
         _logger.LogInformation("FalconAuditService stopped.");
     }

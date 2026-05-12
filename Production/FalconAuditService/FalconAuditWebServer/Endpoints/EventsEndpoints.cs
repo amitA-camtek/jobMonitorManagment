@@ -13,7 +13,7 @@ public static class EventsEndpoints
         api.MapGet("/jobs/{jobName}/report", GetReport);
     }
 
-    private static IResult GetEvents(
+    private static async Task<IResult> GetEvents(
         string jobName, QueryRepository repo,
         string? module, string? priority, string? service,
         string? eventType, string? machine, string? from, string? to, string? path,
@@ -33,17 +33,17 @@ public static class EventsEndpoints
             Page=page, PageSize=pageSize, Sort=sort,
             ExcludeCreated=excludeCreated
         };
-        var (items, total) = repo.GetEvents(jobName, filter);
+        var (items, total) = await repo.GetEventsAsync(jobName, filter);
         return Results.Ok(new { Total = total, Page = page, PageSize = pageSize, Items = items });
     }
 
-    private static IResult GetEvent(string jobName, long id, QueryRepository repo)
+    private static async Task<IResult> GetEvent(string jobName, long id, QueryRepository repo)
     {
-        var detail = repo.GetEvent(jobName, id);
+        var detail = await repo.GetEventAsync(jobName, id);
         return detail is null ? Results.NotFound() : Results.Ok(detail);
     }
 
-    private static IResult GetReport(
+    private static async Task<IResult> GetReport(
         string jobName, QueryRepository repo, HttpContext ctx,
         string? from, string? to, string format = "json",
         int pageSize = 1000)
@@ -51,12 +51,12 @@ public static class EventsEndpoints
         pageSize = Math.Min(Math.Max(pageSize, 1), 5000);
 
         // Exclude 'Created' events from the report unless the job was first set up
-        // within this report period.  When from is null we show the full history, which
-        // naturally includes the job-creation Created events, so no exclusion needed.
+        // within this report period. When from is null we show the full history,
+        // which naturally includes the job-creation Created events, so no exclusion.
         bool excludeCreated = false;
         if (from is not null)
         {
-            var firstEvent = repo.GetJobFirstEventTime(jobName);
+            var firstEvent = await repo.GetJobFirstEventTimeAsync(jobName);
             bool jobCreatedInPeriod = firstEvent is not null &&
                 string.Compare(firstEvent, from, StringComparison.Ordinal) >= 0;
             excludeCreated = !jobCreatedInPeriod;
@@ -65,12 +65,11 @@ public static class EventsEndpoints
         var filter = new EventFilter { From = from, To = to, PageSize = pageSize, Sort = "asc",
                                        ExcludeCreated = excludeCreated,
                                        FileEra = "Runtime" };
-        var (items, total) = repo.GetEvents(jobName, filter);
+        var (items, total) = await repo.GetEventsAsync(jobName, filter);
 
         if (string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase))
             return BuildCsv(jobName, items, ctx);
 
-        // JSON envelope — clients (e.g. Falcon AOI_main) render their own HTML from this.
         return Results.Ok(new
         {
             Job         = jobName,
@@ -122,4 +121,3 @@ public static class EventsEndpoints
         return iso;
     }
 }
-

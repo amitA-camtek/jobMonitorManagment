@@ -8,29 +8,24 @@ public class FileChangeHandler
     private readonly ShardRegistry            _shards;
     private readonly FileClassifier           _classifier;
     private readonly ContentCache             _contentCache;
-    private readonly ManifestManager          _manifest;
     private readonly ChangeDescriptionEnricher _enricher;
     private readonly MonitorConfig            _config;
     private readonly LoginReader              _loginReader;
-    private readonly ShardEvictionService     _eviction;
     private readonly ILogger<FileChangeHandler> _logger;
 
     public FileChangeHandler(
         ShardRegistry shards,
         FileClassifier classifier, ContentCache contentCache,
-        ManifestManager manifest, ChangeDescriptionEnricher enricher,
+        ChangeDescriptionEnricher enricher,
         MonitorConfig config, LoginReader loginReader,
-        ShardEvictionService eviction,
         ILogger<FileChangeHandler> logger)
     {
         _shards       = shards;
         _classifier   = classifier;
         _contentCache = contentCache;
-        _manifest     = manifest;
         _enricher     = enricher;
         _config       = config;
         _loginReader  = loginReader;
-        _eviction     = eviction;
         _logger       = logger;
     }
 
@@ -38,7 +33,7 @@ public class FileChangeHandler
     {
         _logger.LogDebug("Processing change. Path={P} ChangeType={T}", ev.FullPath, ev.ChangeType);
 
-        // Ignore service-internal files (manifest writes, audit DB, etc.)
+        // Ignore service-internal files (audit DB writes, manifest writes, etc.)
         if (ev.FullPath.Contains(@"\.audit\", StringComparison.OrdinalIgnoreCase) ||
             ev.FullPath.Contains("/.audit/",  StringComparison.OrdinalIgnoreCase))
         {
@@ -46,13 +41,14 @@ public class FileChangeHandler
             return;
         }
 
-        var repo = GetRepo(ev.FullPath);
-        if (repo is null)
+        var queue = GetQueue(ev.FullPath);
+        if (queue is null)
         {
             _logger.LogDebug("Skipping root-level file (no job). Path={P}", ev.FullPath);
             return;
         }
-        var cls = _classifier.Classify(ev.FullPath);
+        var repo = queue.Repository;
+        var cls  = _classifier.Classify(ev.FullPath);
 
         // P4 files are not stored — classifier returns priority "P4" for them.
         if (cls.MonitorPriority == "P4")
@@ -148,7 +144,6 @@ public class FileChangeHandler
                 return;
         }
 
-        var (jobName, jobPath) = ExtractJob(ev.FullPath);
         var watch = _config.WatchPath.TrimEnd('\\', '/');
         var relFilepath = ev.FullPath.StartsWith(watch, StringComparison.OrdinalIgnoreCase)
             ? ev.FullPath[(watch.Length)..].TrimStart('\\', '/')
@@ -178,43 +173,30 @@ public class FileChangeHandler
         };
 
         var bl = MakeBaseline(ev.FullPath, newHash ?? oldHash ?? "", newContent ?? oldContent);
-        await repo.InsertAuditEventAsync(entry, bl);
+
+        // Lazy-write path: enqueue the event + a manifest bump. The queue
+        // flushes to audit.db in batched transactions (per-X-second timer or
+        // on cap hit or on a read API call).
+        await queue.EnqueueAsync(entry, bl);
+        queue.EnqueueManifestBump();
 
         _logger.LogInformation(
-            "Audit event written. File={F} EventType={C} Module={M} Priority={P}",
+            "Audit event queued. File={F} EventType={C} Module={M} Priority={P}",
             Path.GetFileName(ev.FullPath), changeType, cls.Module, cls.MonitorPriority);
-
-        // Wire manifest event counter
-        if (jobPath is not null)
-            await _manifest.IncrementEventsAsync(jobPath);
 
         if (ev.ChangeType == WatcherChangeTypes.Deleted)
         {
+            // The baseline is removed in-band so the next event for the same
+            // path is treated as a fresh "Created". Note this opens a new
+            // SQLite connection on its own — acceptable cost for now.
             await repo.DeleteBaselineAsync(ev.FullPath);
             _contentCache.Remove(ev.FullPath);
-        }
-
-        // Self-eviction: a Deleted event that empties the job folder schedules a
-        // shard cleanup so the user's `Remove-Item -Recurse` can finish on retry
-        // (SQLite handles released, .audit\ removed). Any non-Deleted event on
-        // the same job cancels a pending eviction.
-        if (jobName is not null && jobPath is not null)
-        {
-            if (ev.ChangeType == WatcherChangeTypes.Deleted &&
-                ShardEvictionService.IsJobFolderEffectivelyEmpty(jobPath))
-            {
-                _eviction.Schedule(jobName, jobPath);
-            }
-            else if (ev.ChangeType != WatcherChangeTypes.Deleted)
-            {
-                _eviction.Cancel(jobName);
-            }
         }
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private SqliteRepository? GetRepo(string filePath)
+    private AuditEventQueue? GetQueue(string filePath)
     {
         var (jobName, jobPath) = ExtractJob(filePath);
         if (jobName is null || jobPath is null) return null;

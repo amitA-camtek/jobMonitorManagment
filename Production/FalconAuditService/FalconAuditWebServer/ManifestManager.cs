@@ -20,11 +20,21 @@ public class ManifestManager : IDisposable
         _locks.GetOrAdd(manifestPath, _ => new SemaphoreSlim(1, 1));
 
     /// <summary>
-    /// Increment the event counter for the current open history entry (async, thread-safe).
-    /// Called after each successful InsertAuditEventAsync.
+    /// Increment the event counter for the current open history entry by 1.
+    /// Use <see cref="IncrementEventsByAsync"/> for batched updates from the
+    /// AuditEventQueue flush — it does the same read-modify-write but adds N
+    /// in one pass, eliminating per-event manifest.json rewrites.
     /// </summary>
-    public async Task IncrementEventsAsync(string jobPath)
+    public Task IncrementEventsAsync(string jobPath) => IncrementEventsByAsync(jobPath, 1);
+
+    /// <summary>
+    /// Increment the event counter for the current open history entry by
+    /// <paramref name="count"/> in a single read-modify-write. Called once per
+    /// flush by AuditEventQueue with the total of buffered events.
+    /// </summary>
+    public async Task IncrementEventsByAsync(string jobPath, int count)
     {
+        if (count <= 0) return;
         var manifestPath = Path.Combine(jobPath, ".audit", "manifest.json");
         var sem = LockFor(manifestPath);
         await sem.WaitAsync();
@@ -34,7 +44,7 @@ public class ManifestManager : IDisposable
             if (manifest is null) return;
             var last = manifest.History.LastOrDefault(e => e.To == null);
             if (last is null) return;
-            last.Events++;
+            last.Events += count;
             WriteManifest(manifestPath, manifest);
         }
         finally { sem.Release(); }
@@ -180,6 +190,18 @@ public class ManifestManager : IDisposable
 
     private void WriteManifest(string path, JobManifest manifest)
     {
+        // Bail before creating .tmp if the parent .audit\ directory has already
+        // been removed (e.g. BIS recursive delete in progress). Without this
+        // guard, File.WriteAllText would throw DirectoryNotFoundException, but
+        // it can also leave a stray .tmp file inside a folder BIS thought it
+        // had emptied if the create races with the parent's removal.
+        var dir = Path.GetDirectoryName(path);
+        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+        {
+            _logger.LogDebug(
+                "ManifestManager: parent directory missing — skipping write of {P}.", path);
+            return;
+        }
         var tmp = path + ".tmp";
         try
         {

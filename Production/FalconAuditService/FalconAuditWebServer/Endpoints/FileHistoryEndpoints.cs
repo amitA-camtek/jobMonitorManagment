@@ -6,7 +6,7 @@ public static class FileHistoryEndpoints
 {
     public static void Map(RouteGroupBuilder api)
     {
-        api.MapGet("/jobs/{jobName}/history/{*filePath}", (
+        api.MapGet("/jobs/{jobName}/history/{*filePath}", async (
             string jobName, string filePath, QueryRepository repo, JobDiscoveryService discovery) =>
         {
             if (string.IsNullOrWhiteSpace(filePath))
@@ -21,7 +21,7 @@ public static class FileHistoryEndpoints
                 return Results.BadRequest("Invalid file path.");
 
             var relPath = filePath.Replace('/', '\\');
-            var history = repo.GetFileHistory(jobName, relPath);
+            var history = await repo.GetFileHistoryAsync(jobName, relPath);
             return Results.Ok(history);
         });
     }

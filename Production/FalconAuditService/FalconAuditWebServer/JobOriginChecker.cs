@@ -92,7 +92,8 @@ public class JobOriginChecker : IDisposable
         try
         {
             // Skip if origin was already determined (e.g. service restart on an existing job)
-            var repo = _shards.GetOrCreate(jobName, jobPath);
+            var queue = _shards.GetOrCreate(jobName, jobPath);
+            var repo  = queue?.Repository;
             if (repo is not null && repo.GetConfigValue("job_origin") is not null)
             {
                 _logger.LogDebug("JobOriginChecker: '{J}' already classified — skipping.", jobName);

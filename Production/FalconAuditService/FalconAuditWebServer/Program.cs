@@ -40,6 +40,14 @@ try
             ?? throw new InvalidOperationException("AuditService:ParameterDescriptionsPath is required in appsettings.json.");
         var login = section["LoginFilePath"];
         if (!string.IsNullOrEmpty(login)) cfg.LoginFilePath = login;
+
+        if (int.TryParse(section["FlushIntervalSeconds"], out var fi) && fi > 0)
+            cfg.FlushIntervalSeconds = fi;
+        if (int.TryParse(section["FlushQueueMax"], out var fq) && fq > 0)
+            cfg.FlushQueueMax = fq;
+        if (int.TryParse(section["ReadConnectionTimeoutSeconds"], out var rt) && rt > 0)
+            cfg.ReadConnectionTimeoutSeconds = rt;
+
         return cfg;
     });
 
@@ -72,11 +80,13 @@ try
         var shards        = sp.GetRequiredService<ShardRegistry>();
         var manifest      = sp.GetRequiredService<ManifestManager>();
         var originChecker = sp.GetRequiredService<JobOriginChecker>();
+        var eviction      = sp.GetRequiredService<ShardEvictionService>();
         var logger        = sp.GetRequiredService<ILogger<DirectoryWatcher>>();
         return new DirectoryWatcher(config.WatchPath,
             onArrived: async (jobName, jobPath) =>
             {
-                var repo = shards.GetOrCreate(jobName, jobPath);
+                var queue = shards.GetOrCreate(jobName, jobPath);
+                var repo  = queue?.Repository;
                 await manifest.RecordArrivalAsync(jobPath, config.MachineName);
                 originChecker.ScheduleCheck(jobName, jobPath);
                 // After the settle window, close the "JobInit" era so that all
@@ -89,6 +99,15 @@ try
                         try
                         {
                             await Task.Delay(TimeSpan.FromSeconds(config.JobSettleTimeSeconds));
+
+                            // The job may have been deleted (UI delete, API delete, manual
+                            // Explorer wipe) during the settle window. If the shard is no
+                            // longer tracked, audit.db is gone — there's nothing to mark
+                            // and "FileEra remains JobInit" is moot, so skip silently
+                            // rather than logging a warning users can't act on.
+                            if (!shards.TryGet(capturedJobName, out _))
+                                return;
+
                             if (!repo.IsInitialScanDone())
                                 await repo.SetInitialScanDoneAsync();
                         }
@@ -103,12 +122,12 @@ try
                     });
                 }
             },
-            onDeparted: async (jobName) =>
-            {
-                originChecker.CancelCheck(jobName);
-                await manifest.RecordDepartureAsync(Path.Combine(config.WatchPath, jobName));
-                shards.Remove(jobName);
-            },
+            // Folder-level Deleted/Renamed: discard any buffered events
+            // (audit DB went with the folder), then run the full eviction now —
+            // sweeps `.audit\` and `MetaData.ini` so the job folder can be
+            // removed if BIS left it half-deleted.
+            onDeparted: (jobName) =>
+                eviction.EvictNowAsync(jobName, Path.Combine(config.WatchPath, jobName), "folder departed"),
             logger);
     });
 
@@ -128,7 +147,12 @@ try
     builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNegotiate();
     builder.Services.AddAuthorization(o =>
     {
-        o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+        // No FallbackPolicy: endpoints are anonymous unless they explicitly call
+        // .RequireAuthorization(...). The previous fallback (RequireAuthenticatedUser)
+        // forced a Negotiate handshake on every request including the synchronous DELETE
+        // that Falcon's UI thread blocks on — adding ~600ms per delete and corrupting
+        // Falcon's post-delete state. Endpoints that hold sensitive data must opt in via
+        // .RequireAuthorization("AuditorOnly") (see EventsEndpoints).
         o.AddPolicy("AuditorOnly", p => p.RequireRole("Auditor"));
     });
 

@@ -1,0 +1,264 @@
+6-05-12 10:29:23,902 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6122) - before GetMapCoord
+2026-05-12 10:29:23,905 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6125) - before LocateWaferShifts
+2026-05-12 10:29:23,962 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6128) - before showOriginalDie
+2026-05-12 10:29:31,204 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:29:31,420 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:29:31,423 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:29:31,464 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:29:32,162 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:29:41,283 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\ to C:\Job\ValidationJob_qaqa\300mm
+2026-05-12 10:29:41,287 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(325) - Folder C:\Job\ValidationJob_qaqa\300mm already exists
+2026-05-12 10:29:41,306 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes to C:\Job\ValidationJob_qaqa\300mm\Recipes
+2026-05-12 10:29:41,306 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(325) - Folder C:\Job\ValidationJob_qaqa\300mm\Recipes already exists
+2026-05-12 10:29:41,307 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:41,308 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(325) - Folder C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags already exists
+2026-05-12 10:29:41,878 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\.dc_cache to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\.dc_cache
+2026-05-12 10:29:41,878 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\.dc_cache
+2026-05-12 10:29:41,881 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\AMITA1 to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\AMITA1
+2026-05-12 10:29:41,881 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\AMITA1
+2026-05-12 10:29:41,885 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\DebugAFMapping to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\DebugAFMapping
+2026-05-12 10:29:41,886 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\DebugAFMapping
+2026-05-12 10:29:41,890 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\FocusMapping to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\FocusMapping
+2026-05-12 10:29:41,892 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\FocusMapping
+2026-05-12 10:29:41,898 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\FocusMapping\Model_37d9cf47-950c-4c44-a2db-dd44fd15275d to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\FocusMapping\Model_37d9cf47-950c-4c44-a2db-dd44fd15275d
+2026-05-12 10:29:41,898 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\FocusMapping\Model_37d9cf47-950c-4c44-a2db-dd44fd15275d
+2026-05-12 10:29:41,917 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\OpticLightMetadata to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\OpticLightMetadata
+2026-05-12 10:29:41,919 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\OpticLightMetadata
+2026-05-12 10:29:41,922 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\ReferenceBackup to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\ReferenceBackup
+2026-05-12 10:29:41,923 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\ReferenceBackup
+2026-05-12 10:29:42,018 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\SW_QA-3 to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\SW_QA-3
+2026-05-12 10:29:42,019 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\SW_QA-3
+2026-05-12 10:29:42,021 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\TrainData to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\TrainData
+2026-05-12 10:29:42,022 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\TrainData
+2026-05-12 10:29:42,031 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\TrainData\DieImage to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\TrainData\DieImage
+2026-05-12 10:29:42,032 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\TrainData\DieImage
+2026-05-12 10:29:42,424 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\TrainData\ReferenceBackup to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\TrainData\ReferenceBackup
+2026-05-12 10:29:42,426 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\TrainData\ReferenceBackup
+2026-05-12 10:29:42,773 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\WaferAlignData to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\WaferAlignData
+2026-05-12 10:29:42,774 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\WaferAlignData
+2026-05-12 10:29:42,784 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(314) - Copy Folder c:\job\ValidationJob\300mm\Recipes\AllMags\Zones to C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\Zones
+2026-05-12 10:29:42,785 [25300:   11] INFO  CamtekSystem.Folder.Folder::CopyFolder(320) - Creating folder: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\Zones
+2026-05-12 10:29:44,538 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:44,752 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:29:44,756 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:29:44,795 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName Layer3D
+2026-05-12 10:29:44,922 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 
+2026-05-12 10:29:44,924 [25300:    1] INFO  Camtek.Optic.CommonControls.ViewModels.OpticsListViewModel::GetOpticForScenario(470) - Using default optics for scenario Layer3D
+2026-05-12 10:29:44,925 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: C:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:44,927 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName ScanMacroInspection
+2026-05-12 10:29:44,931 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 
+2026-05-12 10:29:44,931 [25300:    1] INFO  Camtek.Optic.CommonControls.ViewModels.OpticsListViewModel::GetOpticForScenario(470) - Using default optics for scenario ScanMacroInspection
+2026-05-12 10:29:44,943 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName ScanTNE
+2026-05-12 10:29:44,947 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 
+2026-05-12 10:29:44,948 [25300:    1] INFO  Camtek.Optic.CommonControls.ViewModels.OpticsListViewModel::GetOpticForScenario(470) - Using default optics for scenario ScanTNE
+2026-05-12 10:29:44,953 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName UniquePat
+2026-05-12 10:29:44,956 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 
+2026-05-12 10:29:44,956 [25300:    1] INFO  Camtek.Optic.CommonControls.ViewModels.OpticsListViewModel::GetOpticForScenario(470) - Using default optics for scenario UniquePat
+2026-05-12 10:29:44,959 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName Scan2d
+2026-05-12 10:29:44,961 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 3845442d-c4ed-4440-8868-5aca09c1e36b
+2026-05-12 10:29:45,118 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::SetHandlingOptions(94) - LoadWaferType started - Patterned
+2026-05-12 10:29:45,127 [25300:   11] INFO  Camtek.Hardware.CameraPanelControl.ViewModels.OpticPanelViewModel::MoveNext(2156) - ChangedActiveSetupData occured
+2026-05-12 10:29:45,193 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::SetHandlingOptions(100) - LoadWaferType ended - Patterned
+2026-05-12 10:29:46,513 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::<SkipPrealignerTimer_Elapsed>b__242_0(4535) - LoadWaferType started
+2026-05-12 10:29:46,631 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::<SkipPrealignerTimer_Elapsed>b__242_0(4541) - LoadWaferType ended
+2026-05-12 10:29:46,663 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:29:46,757 [25300:    1] INFO  Falcon.Net.Classes.clsMultiRecipe::LoadRecipes(411) - Normal LoadRecipes
+2026-05-12 10:29:46,789 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:47,033 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:29:47,037 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:29:47,060 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:29:47,075 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 16
+2026-05-12 10:29:47,209 [25300:    1] ERROR Falcon.Net.Forms.frmJobtab::CheckLoadJob(3849) - Error Count 0
+2026-05-12 10:29:47,259 [25300:    1] INFO  Falcon.Net.Classes.clsMultiRecipe::LoadRecipes(411) - Normal LoadRecipes
+2026-05-12 10:29:47,305 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:47,516 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:29:47,520 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:29:47,523 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:47,534 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:29:47,550 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 16
+2026-05-12 10:29:47,570 [25300:    1] INFO  Falcon.Net.Classes.clsMultiRecipe::LoadRecipes(411) - Normal LoadRecipes
+2026-05-12 10:29:47,604 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:47,832 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:29:47,838 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:29:47,838 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:47,862 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:29:47,877 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 16
+2026-05-12 10:29:48,555 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1421) - ===>>> Enter - c:\job\ValidationJob_qaqa\300mm\
+2026-05-12 10:29:48,947 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1491) - After ScenJobSelectMgr.LoadJob 
+2026-05-12 10:29:48,949 [25300:    1] WARN  Falcon.Net.frmMain::StopLiveVideo(4508) - caller<LoadSetup>
+2026-05-12 10:29:48,950 [25300:    1] INFO  Falcon.Net.frmMain::FinMillAndDisplayControl(4498) - Set IdleTimer.Enabled = False, cameraType: <HIGH_MAG_CAMERA caller<StopLiveVideo>
+2026-05-12 10:29:48,950 [25300:    1] INFO  Falcon.Net.MainContext::GetWaitForScanDone(1999) - return <False>
+2026-05-12 10:29:48,952 [25300:    1] INFO  GainOffsetCalibrationService.Processes.HighMagProcessesRepository::InitIfNeeded(122) - process name folder exist, check if full init should be done
+2026-05-12 10:29:48,953 [25300:    1] INFO  GainOffsetCalibrationService.Processes.HighMagProcessesRepository::InitIfNeeded(122) - process name folder exist, check if full init should be done
+2026-05-12 10:29:48,954 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1603) - After mMag = ScenJobData.Mag , mMag = 2.5
+2026-05-12 10:29:49,111 [25300:    1] INFO  JobParts.Recipe.CleanReference.Serializers.CleanReferenceOptionsSerializerV0::Deserialize(91) - Deserializing JobParts.Recipe.CleanReference.Serializers.CleanReferenceOptionsSerializerV0, Version 0
+2026-05-12 10:29:49,114 [25300:    1] INFO  JobParts.Recipe.CleanReference.Serializers.CleanReferenceOptionsSerializerV0::DeserializePeriodicity(125) - Deserializing perediocity from c:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\Recipe.ini
+2026-05-12 10:29:49,121 [25300:    1] INFO  JobParts.Recipe.CleanReference.Serializers.CleanReferenceOptionsSerializerV0::Deserialize(112) - Deserialize default values from C:\bis\data\apps\Scenario.ini
+2026-05-12 10:29:49,139 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:49,168 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::SetHandlingOptions(94) - LoadWaferType started - Patterned
+2026-05-12 10:29:49,174 [25300:    8] INFO  Camtek.Hardware.CameraPanelControl.ViewModels.OpticPanelViewModel::MoveNext(2156) - ChangedActiveSetupData occured
+2026-05-12 10:29:49,177 [25300:   11] INFO  Camtek.Hardware.CameraPanelControl.ViewModels.OpticPanelViewModel::MoveNext(2156) - ChangedActiveSetupData occured
+2026-05-12 10:29:49,270 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::SetHandlingOptions(100) - LoadWaferType ended - Patterned
+2026-05-12 10:29:49,272 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4577) - Skip loading robot setup
+2026-05-12 10:29:49,273 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4562) - Exit
+2026-05-12 10:29:49,274 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4577) - Skip loading robot setup
+2026-05-12 10:29:49,274 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4562) - Exit
+2026-05-12 10:29:49,276 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4593) - Before writing robot setup to recipe c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags\
+2026-05-12 10:29:49,276 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::WriteRobotSetupName(141) - Write RobotSetup name = Bare_12_8_ThroughBeam.cfg to recipe c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags\\ProductInfo.ini
+2026-05-12 10:29:49,312 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4562) - Exit
+2026-05-12 10:29:49,337 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:29:49,439 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:29:49,518 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1638) - After Set PixelSize
+2026-05-12 10:29:49,530 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1657) - After SetParams
+2026-05-12 10:29:49,567 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1696) - frmScantab.UsingCmmChanging
+2026-05-12 10:29:49,787 [25300:    1] INFO  Falcon.Net.Classes.clsMultiRecipe::LoadRecipes(411) - Normal LoadRecipes
+2026-05-12 10:29:49,826 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:50,063 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:29:50,067 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:29:50,086 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:29:50,116 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 31
+2026-05-12 10:29:51,450 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1840) - before FillLotReports
+2026-05-12 10:29:51,460 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:29:51,463 [25300:    1] INFO  Falcon.Net.Modules.RecipeModelManager::IsLotAqlActive(505) - IsLotAqlActive: ckLotAql is false
+2026-05-12 10:29:51,518 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob_qaqa\300mm\Recipes\AllMags
+2026-05-12 10:29:51,547 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1877) - before GetMapCoord
+2026-05-12 10:29:51,549 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1879) - before LocateWaferShifts
+2026-05-12 10:29:51,566 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:29:51,579 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 16
+2026-05-12 10:29:51,684 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1925) - ===<<< Exit - c:\job\ValidationJob_qaqa\300mm\
+2026-05-12 10:29:51,829 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:29:51,913 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:29:51,922 [25300:    1] INFO  System.Optics.Services.OpticsService::IsMachineSupportIllumLevel(1260) - OpticsService.IsMachineSupportIllumLevel returns true,  optic2d.IsDiffLightOn is false.
+2026-05-12 10:29:51,932 [25300:    1] INFO  System.Optics.Services.OpticsService::IsMachineSupportIllumLevel(1274) - OpticsService.IsMachineSupportIllumLevel returns true,  optic2d.IsDiff2LightOn is false.
+2026-05-12 10:29:51,972 [25300:    1] INFO  System.Optics.Services.OpticsService::IsMachineSupportIllumLevel(1291) - OpticsService.IsMachineSupportIllumLevel: minIllumVal<24.3780553413>, maxIllumVal<50.3260466453>, cameraRoleNominalGl<50.3260466453>, light channel FLASH_REF_LIGHT
+2026-05-12 10:29:55,212 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6122) - before GetMapCoord
+2026-05-12 10:29:55,214 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6125) - before LocateWaferShifts
+2026-05-12 10:29:55,217 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6128) - before showOriginalDie
+2026-05-12 10:29:57,923 [25300:    1] INFO  TilePool.TilePoolUtils::.ctor(30) - Constructing TilePoolUtils
+2026-05-12 10:29:57,969 [25300:    1] INFO  CamtekSystem.Process.ConfigurationResolver.DdsProcessorDynamicConfigurationResolver::ResolveFileName(32) - Resolving configuration file name for DdsProcessor in folder c:\bis\data\dds\DdsProcessors\
+2026-05-12 10:29:57,970 [25300:    1] WARN  CamtekSystem.Process.ConfigurationResolver.DdsProcessorDynamicConfigurationResolver::ResolveFileName(48) - File c:\bis\data\dds\DdsProcessors\DdsProcessorsHost16Cores.xml could not be found, Using c:\bis\data\dds\DdsProcessors\DdsProcessorsMinimal.xml instead!
+2026-05-12 10:29:57,971 [25300:    1] INFO  CamtekSystem.Process.ProcessesConfigurator::Create(19) - Opening configuration at c:\bis\data\dds\DdsProcessors\DdsProcessorsMinimal.xml
+2026-05-12 10:29:57,974 [25300:    1] INFO  DdsIPC.DdsIpcConnector::ConnectToRemoteProxy(63) - Before connecting to remote DdsIpc
+2026-05-12 10:29:58,024 [25300:    1] INFO  CamtekSystem.Configuration.ConfigurationResolverByMemorySize::ResolveFileName(43) - Loading DdsIpcHostDefault Configuration file at 'C:\BIS\data\dds\DdsIpc\DdsIpcHostDefault.xml'
+2026-05-12 10:29:58,025 [25300:    1] INFO  DdsIPC.DdsIpcConfigurator::Deserialize(38) - DdsIPC configuration file: C:\BIS\data\dds\DdsIpc\DdsIpcHostDefault.xml
+2026-05-12 10:29:59,062 [25300:    1] INFO  DdsIPC.DdsIpcConnector::.ctor(38) - After connection
+2026-05-12 10:29:59,087 [25300:    1] INFO  TilePool.TilePoolUtils::ReleaseTiles(45) - No need to release tiles from folder: c:\Job\ValidationJob_qaqa\300mm\Recipes\AllMags\, tiles not loaded...
+2026-05-12 10:29:59,291 [25300:    1] INFO  TilePool.TilePoolUtils::.ctor(30) - Constructing TilePoolUtils
+2026-05-12 10:29:59,322 [25300:    1] INFO  CamtekSystem.Process.ConfigurationResolver.DdsProcessorDynamicConfigurationResolver::ResolveFileName(32) - Resolving configuration file name for DdsProcessor in folder c:\bis\data\dds\DdsProcessors\
+2026-05-12 10:29:59,323 [25300:    1] WARN  CamtekSystem.Process.ConfigurationResolver.DdsProcessorDynamicConfigurationResolver::ResolveFileName(48) - File c:\bis\data\dds\DdsProcessors\DdsProcessorsHost16Cores.xml could not be found, Using c:\bis\data\dds\DdsProcessors\DdsProcessorsMinimal.xml instead!
+2026-05-12 10:29:59,324 [25300:    1] INFO  CamtekSystem.Process.ProcessesConfigurator::Create(19) - Opening configuration at c:\bis\data\dds\DdsProcessors\DdsProcessorsMinimal.xml
+2026-05-12 10:29:59,329 [25300:    1] INFO  TilePool.TilePoolUtils::ReleaseTiles(45) - No need to release tiles from folder: c:\\Job\ValidationJob_qaqa\300mm\Recipes\, tiles not loaded...
+2026-05-12 10:29:59,335 [25300:    1] INFO  TilePool.TilePoolUtils::.ctor(30) - Constructing TilePoolUtils
+2026-05-12 10:29:59,372 [25300:    1] INFO  CamtekSystem.Process.ConfigurationResolver.DdsProcessorDynamicConfigurationResolver::ResolveFileName(32) - Resolving configuration file name for DdsProcessor in folder c:\bis\data\dds\DdsProcessors\
+2026-05-12 10:29:59,373 [25300:    1] WARN  CamtekSystem.Process.ConfigurationResolver.DdsProcessorDynamicConfigurationResolver::ResolveFileName(48) - File c:\bis\data\dds\DdsProcessors\DdsProcessorsHost16Cores.xml could not be found, Using c:\bis\data\dds\DdsProcessors\DdsProcessorsMinimal.xml instead!
+2026-05-12 10:29:59,373 [25300:    1] INFO  CamtekSystem.Process.ProcessesConfigurator::Create(19) - Opening configuration at c:\bis\data\dds\DdsProcessors\DdsProcessorsMinimal.xml
+2026-05-12 10:29:59,378 [25300:    1] INFO  TilePool.TilePoolUtils::ReleaseTiles(45) - No need to release tiles from folder: c:\\Job\ValidationJob_qaqa\300mm\, tiles not loaded...
+2026-05-12 10:29:59,388 [25300:    1] INFO  TilePool.TilePoolUtils::.ctor(30) - Constructing TilePoolUtils
+2026-05-12 10:29:59,420 [25300:    1] INFO  CamtekSystem.Process.ConfigurationResolver.DdsProcessorDynamicConfigurationResolver::ResolveFileName(32) - Resolving configuration file name for DdsProcessor in folder c:\bis\data\dds\DdsProcessors\
+2026-05-12 10:29:59,422 [25300:    1] WARN  CamtekSystem.Process.ConfigurationResolver.DdsProcessorDynamicConfigurationResolver::ResolveFileName(48) - File c:\bis\data\dds\DdsProcessors\DdsProcessorsHost16Cores.xml could not be found, Using c:\bis\data\dds\DdsProcessors\DdsProcessorsMinimal.xml instead!
+2026-05-12 10:29:59,422 [25300:    1] INFO  CamtekSystem.Process.ProcessesConfigurator::Create(19) - Opening configuration at c:\bis\data\dds\DdsProcessors\DdsProcessorsMinimal.xml
+2026-05-12 10:29:59,425 [25300:    1] INFO  TilePool.TilePoolUtils::ReleaseTiles(45) - No need to release tiles from folder: c:\\Job\ValidationJob_qaqa\, tiles not loaded...
+2026-05-12 10:29:59,517 [25300:    1] ERROR Falcon.Net.Forms.frmJobtab::CheckLoadJob(3849) - Error Count 0
+2026-05-12 10:29:59,550 [25300:    1] INFO  Falcon.Net.Classes.clsMultiRecipe::LoadRecipes(411) - Normal LoadRecipes
+2026-05-12 10:29:59,581 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:29:59,781 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:29:59,785 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:29:59,797 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:29:59,829 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:29:59,841 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 31
+2026-05-12 10:29:59,859 [25300:    1] INFO  Falcon.Net.Classes.clsMultiRecipe::LoadRecipes(411) - Normal LoadRecipes
+2026-05-12 10:29:59,886 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:30:00,087 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:30:00,092 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:30:00,115 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:30:00,139 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 31
+2026-05-12 10:30:00,475 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:30:01,725 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  C:\Job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:30:01,932 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:30:01,936 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:30:01,968 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName Layer3D
+2026-05-12 10:30:02,036 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 
+2026-05-12 10:30:02,038 [25300:    1] INFO  Camtek.Optic.CommonControls.ViewModels.OpticsListViewModel::GetOpticForScenario(470) - Using default optics for scenario Layer3D
+2026-05-12 10:30:02,040 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: C:\Job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:30:02,041 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName ScanMacroInspection
+2026-05-12 10:30:02,045 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 
+2026-05-12 10:30:02,045 [25300:    1] INFO  Camtek.Optic.CommonControls.ViewModels.OpticsListViewModel::GetOpticForScenario(470) - Using default optics for scenario ScanMacroInspection
+2026-05-12 10:30:02,049 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName ScanTNE
+2026-05-12 10:30:02,051 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 
+2026-05-12 10:30:02,052 [25300:    1] INFO  Camtek.Optic.CommonControls.ViewModels.OpticsListViewModel::GetOpticForScenario(470) - Using default optics for scenario ScanTNE
+2026-05-12 10:30:02,057 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName UniquePat
+2026-05-12 10:30:02,061 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 
+2026-05-12 10:30:02,062 [25300:    1] INFO  Camtek.Optic.CommonControls.ViewModels.OpticsListViewModel::GetOpticForScenario(470) - Using default optics for scenario UniquePat
+2026-05-12 10:30:02,065 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(48) - ScenarioName Scan2d
+2026-05-12 10:30:02,067 [25300:    1] INFO  Camtek.Optic.CommonControls.OpticsManagers.OpticsManager::LoadOpticsForScenario(61) - CurrentOptics 3845442d-c4ed-4440-8868-5aca09c1e36b
+2026-05-12 10:30:02,325 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1421) - ===>>> Enter - c:\job\ValidationJob\300mm\
+2026-05-12 10:30:02,652 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1491) - After ScenJobSelectMgr.LoadJob 
+2026-05-12 10:30:02,655 [25300:    1] WARN  Falcon.Net.frmMain::StopLiveVideo(4508) - caller<LoadSetup>
+2026-05-12 10:30:02,655 [25300:    1] INFO  Falcon.Net.frmMain::FinMillAndDisplayControl(4498) - Set IdleTimer.Enabled = False, cameraType: <HIGH_MAG_CAMERA caller<StopLiveVideo>
+2026-05-12 10:30:02,656 [25300:    1] INFO  Falcon.Net.MainContext::GetWaitForScanDone(1999) - return <False>
+2026-05-12 10:30:02,657 [25300:    1] INFO  GainOffsetCalibrationService.Processes.HighMagProcessesRepository::InitIfNeeded(122) - process name folder exist, check if full init should be done
+2026-05-12 10:30:02,658 [25300:    1] INFO  GainOffsetCalibrationService.Processes.HighMagProcessesRepository::InitIfNeeded(122) - process name folder exist, check if full init should be done
+2026-05-12 10:30:02,659 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1603) - After mMag = ScenJobData.Mag , mMag = 2.5
+2026-05-12 10:30:02,843 [25300:    1] INFO  JobParts.Recipe.CleanReference.Serializers.CleanReferenceOptionsSerializerV0::Deserialize(91) - Deserializing JobParts.Recipe.CleanReference.Serializers.CleanReferenceOptionsSerializerV0, Version 0
+2026-05-12 10:30:02,846 [25300:    1] INFO  JobParts.Recipe.CleanReference.Serializers.CleanReferenceOptionsSerializerV0::DeserializePeriodicity(125) - Deserializing perediocity from c:\Job\ValidationJob\300mm\Recipes\AllMags\Recipe.ini
+2026-05-12 10:30:02,851 [25300:    1] INFO  JobParts.Recipe.CleanReference.Serializers.CleanReferenceOptionsSerializerV0::Deserialize(112) - Deserialize default values from C:\bis\data\apps\Scenario.ini
+2026-05-12 10:30:02,895 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::SetHandlingOptions(94) - LoadWaferType started - Patterned
+2026-05-12 10:30:02,905 [25300:    8] INFO  Camtek.Hardware.CameraPanelControl.ViewModels.OpticPanelViewModel::MoveNext(2156) - ChangedActiveSetupData occured
+2026-05-12 10:30:02,910 [25300:   29] INFO  Camtek.Hardware.CameraPanelControl.ViewModels.OpticPanelViewModel::MoveNext(2156) - ChangedActiveSetupData occured
+2026-05-12 10:30:02,980 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::SetHandlingOptions(100) - LoadWaferType ended - Patterned
+2026-05-12 10:30:02,983 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4577) - Skip loading robot setup
+2026-05-12 10:30:02,984 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4562) - Exit
+2026-05-12 10:30:02,985 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4577) - Skip loading robot setup
+2026-05-12 10:30:02,986 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4562) - Exit
+2026-05-12 10:30:02,987 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4593) - Before writing robot setup to recipe c:\job\ValidationJob\300mm\Recipes\AllMags\
+2026-05-12 10:30:02,988 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::WriteRobotSetupName(141) - Write RobotSetup name = Bare_12_8_ThroughBeam.cfg to recipe c:\job\ValidationJob\300mm\Recipes\AllMags\\ProductInfo.ini
+2026-05-12 10:30:03,025 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::vRobotSetup_SelectionChanged(4562) - Exit
+2026-05-12 10:30:03,074 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:30:03,164 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:30:03,246 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1638) - After Set PixelSize
+2026-05-12 10:30:03,257 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1657) - After SetParams
+2026-05-12 10:30:03,276 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1696) - frmScantab.UsingCmmChanging
+2026-05-12 10:30:03,485 [25300:    1] INFO  Falcon.Net.Classes.clsMultiRecipe::LoadRecipes(411) - Normal LoadRecipes
+2026-05-12 10:30:03,514 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:30:03,706 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:30:03,712 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:30:03,723 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:30:03,735 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 16
+2026-05-12 10:30:05,064 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1840) - before FillLotReports
+2026-05-12 10:30:05,078 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:30:05,081 [25300:    1] INFO  Falcon.Net.Modules.RecipeModelManager::IsLotAqlActive(505) - IsLotAqlActive: ckLotAql is false
+2026-05-12 10:30:05,137 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:30:05,168 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1877) - before GetMapCoord
+2026-05-12 10:30:05,176 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1879) - before LocateWaferShifts
+2026-05-12 10:30:05,195 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:30:05,206 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 16
+2026-05-12 10:30:05,328 [25300:    1] INFO  Falcon.Net.Forms.frmJobtab::LoadSetup(1925) - ===<<< Exit - c:\job\ValidationJob\300mm\
+2026-05-12 10:30:05,428 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:30:05,519 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:30:05,524 [25300:    1] INFO  System.Optics.Services.OpticsService::IsMachineSupportIllumLevel(1260) - OpticsService.IsMachineSupportIllumLevel returns true,  optic2d.IsDiffLightOn is false.
+2026-05-12 10:30:05,530 [25300:    1] INFO  System.Optics.Services.OpticsService::IsMachineSupportIllumLevel(1274) - OpticsService.IsMachineSupportIllumLevel returns true,  optic2d.IsDiff2LightOn is false.
+2026-05-12 10:30:05,552 [25300:    1] INFO  System.Optics.Services.OpticsService::IsMachineSupportIllumLevel(1291) - OpticsService.IsMachineSupportIllumLevel: minIllumVal<24.3780553413>, maxIllumVal<50.3260466453>, cameraRoleNominalGl<50.3260466453>, light channel FLASH_REF_LIGHT
+2026-05-12 10:30:09,373 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6122) - before GetMapCoord
+2026-05-12 10:30:09,376 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6125) - before LocateWaferShifts
+2026-05-12 10:30:09,379 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6128) - before showOriginalDie
+2026-05-12 10:30:09,606 [25300:    1] INFO  JobSelect.Net.frmJSMain::InitVariables(699) - Enter
+2026-05-12 10:30:09,610 [25300:    1] INFO  JobSelect.Net.frmJSMain::InitVariables(746) - Exit
+2026-05-12 10:30:10,708 [25300:    1] INFO  JobSelect.Net.frmJSMain::CalculateOptimalWindowSize(1648) - Window size calculated: 1006x646 (max setup name width: 56)
+2026-05-12 10:30:16,071 [25300:    1] INFO  JobSelect.Net.frmJSMain::OpenJob(922) - Enter: Job=c:\job\Diced_10.0.4511
+2026-05-12 10:30:16,151 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6122) - before GetMapCoord
+2026-05-12 10:30:16,153 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6125) - before LocateWaferShifts
+2026-05-12 10:30:16,177 [25300:    1] INFO  Falcon.Net.frmMain::RefreshOriginalDie(6128) - before showOriginalDie
+2026-05-12 10:30:16,366 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::SetHandlingOptions(94) - LoadWaferType started - Patterned
+2026-05-12 10:30:16,450 [25300:    1] INFO  Falcon.Net.Modules.HadlingParamsHelper::SetHandlingOptions(100) - LoadWaferType ended - Patterned
+2026-05-12 10:30:16,673 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::<SkipPrealignerTimer_Elapsed>b__242_0(4535) - LoadWaferType started
+2026-05-12 10:30:16,771 [25300:    1] INFO  Falcon.Net.Forms.SetupTab::<SkipPrealignerTimer_Elapsed>b__242_0(4541) - LoadWaferType ended
+2026-05-12 10:30:16,826 [25300:    1] INFO  Falcon.Net.Modules.modDataContext::GetOpticsForScenario(198) - GetOpticsForScenario - currentScenario: Namespace.RuntimeEntities.ScenarioMetadata_Runtime
+2026-05-12 10:30:16,943 [25300:    1] INFO  Falcon.Net.Classes.clsMultiRecipe::LoadRecipes(411) - Normal LoadRecipes
+2026-05-12 10:30:16,965 [25300:39604] INFO  CZones::Create(245) - Before loading zones from  c:\job\ValidationJob\300mm\Recipes\AllMags
+2026-05-12 10:30:17,173 [25300:39604] INFO  COpticLightMetadata::Load(104) - call to COpticLightMetadata::Load
+2026-05-12 10:30:17,178 [25300:39604] INFO  COpticLightMetadata::Dump(491) - m_exist<0>
+2026-05-12 10:30:17,192 [25300:39604] INFO  BasicBinArray::LoadConvertTable(317) - Convert Table file name C:\Bis\data\dds\ClassificationConvertTable.ini
+2026-05-12 10:30:17,203 [25300:39604] INFO  BasicBinArray::Load(203) - Duration: 16
+2026-05-12 10:30:17,297 [25300:    1] WARN  Camtek.Optic.CommonControls.ViewModels.UpdateZOpticsViewModel::OnRecipeChanged(73) - Recipe id is null
+2026-05-12 10:30:26,204 [25300:39604] INFO  CSetupData::FinalRelease(136) - Finalize SetupData: c:\job\ValidationJob\300mm\Recipes\AllMags
+
