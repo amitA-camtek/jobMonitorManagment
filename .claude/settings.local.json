@@ -25,7 +25,8 @@
       "Bash(where dotnet-stack *)",
       "Bash(dotnet-stack --help)",
       "Bash(pwsh -NoProfile -Command \"Get-Content 'C:\\\\\\\\bis\\\\\\\\ErrorLog\\\\\\\\AOI_Main_2026_5_11.net' -Tail 0 -Wait | Select-String -Pattern 'ERROR|FATAL|Exception|Busy|Save-?As|delete|Delete|Create|create|recipe|Recipe|Reference|ProgressBar|ProgressOff|Catch|throw'\")",
-      "Bash(pwsh -NoProfile -Command \"Get-Content 'C:\\\\\\\\Amit\\\\\\\\jobMonitorManagment\\\\\\\\.claude\\\\\\\\audit_console.log' -Tail 0 -Wait | Select-String -Pattern 'ShardRegistry|DiscardOnDeparture|ManifestManager|Departed|Arrived|Evict|Dispose|ERR|Exception|FAIL|busy|locked|denied|delete|Delete|moved|Moved|create|Create'\")"
+      "Bash(pwsh -NoProfile -Command \"Get-Content 'C:\\\\\\\\Amit\\\\\\\\jobMonitorManagment\\\\\\\\.claude\\\\\\\\audit_console.log' -Tail 0 -Wait | Select-String -Pattern 'ShardRegistry|DiscardOnDeparture|ManifestManager|Departed|Arrived|Evict|Dispose|ERR|Exception|FAIL|busy|locked|denied|delete|Delete|moved|Moved|create|Create'\")",
+      "Bash(echo \"---total files in c:\\\\\\\\bis\\\\\\\\bin---\")"
     ]
   }
 }

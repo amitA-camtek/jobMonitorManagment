@@ -1,0 +1,13 @@
+Hi Amit,
+
+ 
+
+This is the paths to different jobs in Vcam:
+
+ 
+
+\\rndtest4\E$\VCATEMP\SW_QA-5_2026-05-10_10-00-37.zip
+\\rndtest4\E$\VCAMS For TestAutomation\SW_QA-4_2025-03-18_12-02-13.zip
+\\rndtest4\E$\VCATEMP\RND-10_2026-04-13_14-30-37.zip
+\\rndtest4\E$\VCATEMP\RND-10_2026-03-25_10-18-11
+ 
